@@ -10,7 +10,9 @@ What you'll minimally need to get started:
 - A way to generate client tokens
 - The .framework file from the IP Messaging client for iOS distribution
 
-In the ChannelListViewController.m file, find the line that Xcode will let you know is an error.  Delete that #error line and fill in a client token in the line below:
+The first step is to bring the .framework into the project.  The easiest way to do this is to find the .framework in the tar.bz distribution and drag-n-drop it into the project navigator, next to the existing libc++.dylib reference is a good spot.
+
+Next, in the ChannelListViewController.m file, find the line that Xcode will let you know is an error.  Delete that #error line and fill in a client token in the line below:
 
         NSString *token = @"";
 
