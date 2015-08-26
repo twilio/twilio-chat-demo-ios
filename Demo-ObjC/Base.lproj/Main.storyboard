@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="7706" systemVersion="14E46" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="FxL-sU-6yS">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="7706" systemVersion="14F27" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="FxL-sU-6yS">
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="7703"/>
         <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
@@ -152,13 +152,13 @@
                                                     <autoresizingMask key="autoresizingMask"/>
                                                     <subviews>
                                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="750" verticalHuggingPriority="750" text="username" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="62e-zW-tja">
-                                                            <rect key="frame" x="8" y="8" width="60.5" height="17"/>
+                                                            <rect key="frame" x="8" y="8" width="61" height="17"/>
                                                             <fontDescription key="fontDescription" type="boldSystem" pointSize="13"/>
                                                             <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
                                                             <nil key="highlightedColor"/>
                                                         </label>
                                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="750" verticalHuggingPriority="750" text="date sent" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nCF-xY-PB7">
-                                                            <rect key="frame" x="541" y="7" width="50.5" height="16"/>
+                                                            <rect key="frame" x="541" y="7" width="51" height="16"/>
                                                             <fontDescription key="fontDescription" type="system" weight="thin" pointSize="13"/>
                                                             <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
                                                             <nil key="highlightedColor"/>
@@ -196,26 +196,6 @@
                                             <outlet property="delegate" destination="0Cj-at-BRt" id="Jv9-Ys-nVl"/>
                                         </connections>
                                     </tableView>
-                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Ke0-8V-SYk">
-                                        <rect key="frame" x="175" y="250" width="250" height="100"/>
-                                        <subviews>
-                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="JDG-5m-1Av">
-                                                <rect key="frame" x="0.0" y="40" width="250" height="20.5"/>
-                                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="17"/>
-                                                <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
-                                                <nil key="highlightedColor"/>
-                                            </label>
-                                        </subviews>
-                                        <color key="backgroundColor" red="0.40000000596046448" green="0.80000001192092896" blue="1" alpha="1" colorSpace="calibratedRGB"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" constant="250" id="0HK-t2-9Vq"/>
-                                            <constraint firstAttribute="height" constant="100" id="0r8-Sy-jdg"/>
-                                            <constraint firstAttribute="centerX" secondItem="JDG-5m-1Av" secondAttribute="centerX" id="Cgh-hS-p8j"/>
-                                            <constraint firstItem="JDG-5m-1Av" firstAttribute="leading" secondItem="Ke0-8V-SYk" secondAttribute="leading" id="LOZ-Bb-qGh"/>
-                                            <constraint firstAttribute="trailing" secondItem="JDG-5m-1Av" secondAttribute="trailing" id="S8c-cn-bAF"/>
-                                            <constraint firstAttribute="centerY" secondItem="JDG-5m-1Av" secondAttribute="centerY" id="hJn-iK-G7s"/>
-                                        </constraints>
-                                    </view>
                                     <textField opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="new message" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="hjB-Zx-EM3">
                                         <rect key="frame" x="0.0" y="570" width="600" height="30"/>
                                         <color key="backgroundColor" cocoaTouchSystemColor="groupTableViewBackgroundColor"/>
@@ -236,9 +216,7 @@
                                     <constraint firstAttribute="trailing" secondItem="hjB-Zx-EM3" secondAttribute="trailing" id="N2Y-Ay-Ntr"/>
                                     <constraint firstItem="hjB-Zx-EM3" firstAttribute="leading" secondItem="QPm-3i-LZf" secondAttribute="leading" id="Pjc-Sl-Ums"/>
                                     <constraint firstAttribute="trailing" secondItem="Bci-tV-7Gm" secondAttribute="trailing" id="Tpd-dP-EL0"/>
-                                    <constraint firstAttribute="centerX" secondItem="Ke0-8V-SYk" secondAttribute="centerX" id="rJ9-zJ-R6f"/>
                                     <constraint firstAttribute="bottom" secondItem="hjB-Zx-EM3" secondAttribute="bottom" id="sIq-B9-UIt"/>
-                                    <constraint firstAttribute="centerY" secondItem="Ke0-8V-SYk" secondAttribute="centerY" id="sz9-QX-TOf"/>
                                     <constraint firstItem="Bci-tV-7Gm" firstAttribute="top" secondItem="QPm-3i-LZf" secondAttribute="top" id="yU5-so-CmE"/>
                                 </constraints>
                             </view>
@@ -262,8 +240,6 @@
                         <outlet property="keyboardAdjustmentConstraint" destination="S6h-nD-Kqy" id="eBX-Pb-BBm"/>
                         <outlet property="messageInput" destination="hjB-Zx-EM3" id="mJN-mk-QPM"/>
                         <outlet property="tableView" destination="Bci-tV-7Gm" id="zVr-vc-Aur"/>
-                        <outlet property="toastView" destination="Ke0-8V-SYk" id="ZKM-fe-4Py"/>
-                        <outlet property="toastViewLabel" destination="JDG-5m-1Av" id="frD-op-Vf1"/>
                         <segue destination="qeA-eK-Qgg" kind="unwind" identifier="returnToChannels" unwindAction="returnFromChannel:" id="8aU-KT-AHi"/>
                     </connections>
                 </viewController>

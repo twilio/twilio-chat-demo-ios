@@ -5,19 +5,15 @@
 //  Copyright (c) 2015 Twilio. All rights reserved.
 //
 
-#import <QuartzCore/QuartzCore.h>
-
 #import "ChannelViewController.h"
 #import "MessageTableViewCell.h"
+#import "DemoHelpers.h"
 
 @interface ChannelViewController () <UITableViewDataSource, UITableViewDelegate, TMChannelDelegate, UITextFieldDelegate>
 @property (nonatomic, weak) IBOutlet UITableView *tableView;
 @property (nonatomic, strong) NSMutableOrderedSet *messages;
 @property (weak, nonatomic) IBOutlet UITextField *messageInput;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *keyboardAdjustmentConstraint;
-
-@property (weak, nonatomic) IBOutlet UIView *toastView;
-@property (weak, nonatomic) IBOutlet UILabel *toastViewLabel;
 @end
 
 @implementation ChannelViewController
@@ -42,37 +38,12 @@
     self.messages = [[NSMutableOrderedSet alloc] init];
 }
 
-- (void)displayToastWithMessage:(NSString *)message {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        self.toastViewLabel.text = message;
-        self.toastView.alpha = 0.0f;
-        self.toastView.hidden = NO;
-        
-        [UIView animateWithDuration:1.25f delay:0.0f
-                            options:UIViewAnimationOptionBeginFromCurrentState
-                         animations:^{
-                             self.toastView.alpha = 1.0f;
-                         } completion:^(BOOL finished) {
-                             [UIView animateWithDuration:1.25f delay:1.0f
-                                                 options:UIViewAnimationOptionBeginFromCurrentState
-                                              animations:^{
-                                                  self.toastView.alpha = 0.0f;
-                                              } completion:^(BOOL finished) {
-                                                  self.toastView.hidden = YES;
-                                              }];
-                         }];
-    });
-}
-
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view.
     
     self.tableView.rowHeight = UITableViewAutomaticDimension;
     self.tableView.estimatedRowHeight = 88.0f;
-
-    self.toastView.layer.cornerRadius = 5.0f;
-    self.toastView.alpha = 0.0f;
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -220,9 +191,11 @@
         [self.channel setFriendlyName:newValue
                            completion:^(TMResultEnum result) {
                                if (result == TMResultSuccess) {
-                                   [weakSelf displayToastWithMessage:@"Friendly name changed."];
+                                   [DemoHelpers displayToastWithMessage:@"Friendly name changed."
+                                                                 inView:weakSelf.view];
                                } else {
-                                   [weakSelf displayToastWithMessage:@"Friendly name could not be changed."];
+                                   [DemoHelpers displayToastWithMessage:@"Friendly name could not be changed."
+                                                                 inView:weakSelf.view];
                                }
                            }];
     };
@@ -250,9 +223,11 @@
         [self.channel setAttributes:attributes
                          completion:^(TMResultEnum result) {
                              if (result == TMResultSuccess) {
-                                 [weakSelf displayToastWithMessage:@"Topic changed."];
+                                 [DemoHelpers displayToastWithMessage:@"Topic changed."
+                                                               inView:weakSelf.view];
                              } else {
-                                 [weakSelf displayToastWithMessage:@"Topic could not be changed."];
+                                 [DemoHelpers displayToastWithMessage:@"Topic could not be changed."
+                                                               inView:weakSelf.view];
                              }
                          }];
     };
@@ -279,9 +254,11 @@
         [self.channel.members inviteByIdentity:newValue
                                     completion:^(TMResultEnum result) {
                                         if (result == TMResultSuccess) {
-                                            [weakSelf displayToastWithMessage:@"User invited."];
+                                            [DemoHelpers displayToastWithMessage:@"User invited."
+                                                                          inView:weakSelf.view];
                                         } else {
-                                            [weakSelf displayToastWithMessage:@"User could not be invited."];
+                                            [DemoHelpers displayToastWithMessage:@"User could not be invited."
+                                                                          inView:weakSelf.view];
                                         }
                                     }];
     };
@@ -376,7 +353,8 @@
 #pragma mark - TMChannelDelegate
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelChanged:(TMChannel *)channel {
-    [self displayToastWithMessage:[NSString stringWithFormat:@"Channel attributes changed."]];
+    [DemoHelpers displayToastWithMessage:@"Channel attributes changed."
+                                  inView:self.view];
     
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.tableView reloadData];
@@ -392,7 +370,8 @@
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client channel:(TMChannel *)channel memberJoined:(TMMember *)member {
-    [self displayToastWithMessage:[NSString stringWithFormat:@"%@ joined the channel.", member.identity]];
+    [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ joined the channel.", member.identity]
+                                  inView:self.view];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client channel:(TMChannel *)channel memberChanged:(TMMember *)member {
@@ -400,7 +379,8 @@
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client channel:(TMChannel *)channel memberLeft:(TMMember *)member {
-    [self displayToastWithMessage:[NSString stringWithFormat:@"%@ left the channel.", member.identity]];
+    [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ left the channel.", member.identity]
+                                  inView:self.view];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client channel:(TMChannel *)channel messageAdded:(TMMessage *)message {

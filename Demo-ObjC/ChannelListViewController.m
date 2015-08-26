@@ -9,6 +9,7 @@
 #import "ChannelTableViewCell.h"
 #import "ChannelViewController.h"
 #import "PushManager.h"
+#import "DemoHelpers.h"
 
 #import <TwilioIPMessagingClient/TwilioIPMessagingClient.h>
 
@@ -40,9 +41,11 @@
     self.client = [TwilioIPMessagingClient ipMessagingClientWithToken:token
                                                              delegate:self];
     
-    [PushManager sharedManager].ipMessagingClient = self.client;
-    
-    [self populateChannels];
+    if (self.client) {
+        [PushManager sharedManager].ipMessagingClient = self.client;
+        
+        [self populateChannels];
+    }
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -107,7 +110,8 @@
                                                                                  type:isPrivate ? TMChannelTypePrivate : TMChannelTypePublic
                                                                            completion:^(TMResultEnum result, TMChannel *channel) {
                                                                                if (result == TMResultSuccess) {
-                                                                                   // TODO: toast user channel creation message
+                                                                                   [DemoHelpers displayToastWithMessage:@"Channel Created"
+                                                                                                                 inView:self.view];
                                                                                    [channel joinWithCompletion:^(TMResultEnum result) {
                                                                                        [channel setAttributes:@{@"topic": @""
                                                                                                                 }
@@ -116,7 +120,8 @@
                                                                                                    }];
                                                                                    }];
                                                                                } else {
-                                                                                   // TODO: toast user channel creation failure message
+                                                                                   [DemoHelpers displayToastWithMessage:@"Channel Create Failed"
+                                                                                                                 inView:self.view];
                                                                                }
                                                                            }];
                                  }]];
@@ -256,7 +261,8 @@
                                                            style:UIAlertActionStyleDefault
                                                          handler:^(UIAlertAction *action) {
                                                              [channel joinWithCompletion:^(TMResultEnum result) {
-                                                                 // TODO: toast user completion message
+                                                                 [DemoHelpers displayToastWithMessage:@"Channel Joined"
+                                                                                               inView:self.view];
                                                                  [self.tableView reloadData];
                                                              }];
                                                          }]];
@@ -266,7 +272,8 @@
                                                                style:UIAlertActionStyleDefault
                                                              handler:^(UIAlertAction *action) {
                                                                  [channel declineInvitationWithCompletion:^(TMResultEnum result) {
-                                                                     // TODO: toast user completion message
+                                                                     [DemoHelpers displayToastWithMessage:@"Invite Declined"
+                                                                                                   inView:self.view];
                                                                      [self.tableView reloadData];
                                                                  }];
                                                              }]];
@@ -276,7 +283,8 @@
                                                            style:UIAlertActionStyleDestructive
                                                          handler:^(UIAlertAction *action) {
                                                              [channel destroyWithCompletion:^(TMResultEnum result) {
-                                                                 // TODO: toast user completion message
+                                                                 [DemoHelpers displayToastWithMessage:@"Channel Destroyed"
+                                                                                               inView:self.view];
                                                                  [self.tableView reloadData];
                                                              }];
                                                          }]];
