@@ -85,42 +85,36 @@
 - (IBAction)performAction:(id)sender {
     UIAlertController *actionsSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     
+    __weak __typeof(self) weakSelf = self;
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Change Friendly Name"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
-                                                       [self changeFriendlyName];
+                                                       [weakSelf changeFriendlyName];
                                                    }]];
     
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Change Topic"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
-                                                       [self changeTopic];
+                                                       [weakSelf changeTopic];
                                                    }]];
     
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"List Members"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
-                                                       TMMembers *members = self.channel.members;
-                                                       // TODO: display in UI
-                                                       NSLog(@"@@@@@ members (%ld): %@", (long)members.allObjects.count, members.allObjects);
+                                                       [weakSelf listMembers];
                                                    }]];
 
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Invite Member"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
-                                                       [self inviteMember];
+                                                       [weakSelf inviteMember];
                                                    }]];
     
     
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Leave"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
-                                                       [self.channel leaveWithCompletion:^(TMResultEnum result) {
-                                                           // TODO: let user know completion result
-                                                           if (result == TMResultSuccess) {
-                                                               [self performSegueWithIdentifier:@"returnToChannels" sender:nil];
-                                                           }
-                                                       }];
+                                                       [weakSelf leaveChannel];
                                                    }]];
 
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Cancel"
@@ -167,7 +161,7 @@
         [self.channel.messages sendMessage:message
                                 completion:^(TMResultEnum result) {
                                     if (result == TMResultFailure) {
-                                        // TODO: let user know result was failure
+                                        [DemoHelpers displayToastWithMessage:@"Failed to send message." inView:self.view];
                                     }
                                 }];
     }
@@ -268,6 +262,27 @@
                  initialValue:initialValue
                   actionTitle:actionTitle
                        action:action];
+}
+
+- (void)listMembers {
+    NSArray *members = [self.channel.members.allObjects sortedArrayUsingComparator:^NSComparisonResult(TMMember *obj1, TMMember *obj2) {
+        return [obj1.identity compare:obj2.identity options:NSCaseInsensitiveSearch];
+    }];
+    NSMutableString *membersList = [NSMutableString string];
+    [members enumerateObjectsUsingBlock:^(TMMember *member, NSUInteger idx, BOOL *stop) {
+        [membersList appendFormat:@"%@%@", membersList.length>0?@", ":@"", member.identity];
+    }];
+    [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"Members:\n%@", membersList] inView:self.view];
+}
+
+- (void)leaveChannel {
+    [self.channel leaveWithCompletion:^(TMResultEnum result) {
+        if (result == TMResultSuccess) {
+            [self performSegueWithIdentifier:@"returnToChannels" sender:nil];
+        } else {
+            [DemoHelpers displayToastWithMessage:@"Failed to leave channel." inView:self.view];
+        }
+    }];
 }
 
 - (void)promptUserWithTitle:(NSString *)title
