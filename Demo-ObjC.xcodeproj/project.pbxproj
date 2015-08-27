@@ -15,10 +15,10 @@
 		58223ACB1B69571C00F0DF97 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 58223AC91B69571C00F0DF97 /* LaunchScreen.xib */; };
 		58223B4C1B6AA07600F0DF97 /* libc++.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 58223B4B1B6AA07600F0DF97 /* libc++.dylib */; };
 		583D81461B6FA82E00BF3C56 /* ChannelTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 583D81451B6FA82E00BF3C56 /* ChannelTableViewCell.m */; };
-		58D508C71B73F3C60093B5F1 /* TwilioIPMessagingClient.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 58D508C61B73F3C60093B5F1 /* TwilioIPMessagingClient.framework */; };
 		58D509101B7B78D20093B5F1 /* ChannelViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 58D5090F1B7B78D20093B5F1 /* ChannelViewController.m */; };
 		58D509131B7B7AF00093B5F1 /* MessageTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 58D509121B7B7AF00093B5F1 /* MessageTableViewCell.m */; };
 		58D5091E1B7E83B50093B5F1 /* PushManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 58D5091D1B7E83B50093B5F1 /* PushManager.m */; };
+		58FB4B201B8E5A8800DDF5B8 /* DemoHelpers.m in Sources */ = {isa = PBXBuildFile; fileRef = 58FB4B1F1B8E5A8800DDF5B8 /* DemoHelpers.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,13 +35,14 @@
 		58223B4B1B6AA07600F0DF97 /* libc++.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libc++.dylib"; path = "usr/lib/libc++.dylib"; sourceTree = SDKROOT; };
 		583D81441B6FA82E00BF3C56 /* ChannelTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ChannelTableViewCell.h; sourceTree = "<group>"; };
 		583D81451B6FA82E00BF3C56 /* ChannelTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ChannelTableViewCell.m; sourceTree = "<group>"; };
-		58D508C61B73F3C60093B5F1 /* TwilioIPMessagingClient.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = TwilioIPMessagingClient.framework; path = ../TwilioIPMessagingClient.framework; sourceTree = "<group>"; };
 		58D5090E1B7B78D20093B5F1 /* ChannelViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ChannelViewController.h; sourceTree = "<group>"; };
 		58D5090F1B7B78D20093B5F1 /* ChannelViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ChannelViewController.m; sourceTree = "<group>"; };
 		58D509111B7B7AF00093B5F1 /* MessageTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MessageTableViewCell.h; sourceTree = "<group>"; };
 		58D509121B7B7AF00093B5F1 /* MessageTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MessageTableViewCell.m; sourceTree = "<group>"; };
 		58D5091C1B7E83B50093B5F1 /* PushManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PushManager.h; sourceTree = "<group>"; };
 		58D5091D1B7E83B50093B5F1 /* PushManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PushManager.m; sourceTree = "<group>"; };
+		58FB4B1E1B8E5A8800DDF5B8 /* DemoHelpers.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DemoHelpers.h; sourceTree = "<group>"; };
+		58FB4B1F1B8E5A8800DDF5B8 /* DemoHelpers.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DemoHelpers.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -50,7 +51,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				58223B4C1B6AA07600F0DF97 /* libc++.dylib in Frameworks */,
-				58D508C71B73F3C60093B5F1 /* TwilioIPMessagingClient.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -61,7 +61,6 @@
 			isa = PBXGroup;
 			children = (
 				58223B4B1B6AA07600F0DF97 /* libc++.dylib */,
-				58D508C61B73F3C60093B5F1 /* TwilioIPMessagingClient.framework */,
 				58223AB91B69571C00F0DF97 /* Demo-ObjC */,
 				58223AB81B69571C00F0DF97 /* Products */,
 			);
@@ -94,6 +93,8 @@
 				58223AC71B69571C00F0DF97 /* Images.xcassets */,
 				58223AC91B69571C00F0DF97 /* LaunchScreen.xib */,
 				58223ABA1B69571C00F0DF97 /* Supporting Files */,
+				58FB4B1E1B8E5A8800DDF5B8 /* DemoHelpers.h */,
+				58FB4B1F1B8E5A8800DDF5B8 /* DemoHelpers.m */,
 			);
 			path = "Demo-ObjC";
 			sourceTree = "<group>";
@@ -177,6 +178,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				58FB4B201B8E5A8800DDF5B8 /* DemoHelpers.m in Sources */,
 				58223AC31B69571C00F0DF97 /* ChannelListViewController.m in Sources */,
 				58D509101B7B78D20093B5F1 /* ChannelViewController.m in Sources */,
 				583D81461B6FA82E00BF3C56 /* ChannelTableViewCell.m in Sources */,

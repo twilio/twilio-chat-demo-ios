@@ -19,7 +19,6 @@
 
     NSDictionary* localNotification = [launchOptions objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
     if (localNotification) {
-        // FIXME: limit to RTD related notifications?
         [self application:application didReceiveRemoteNotification:localNotification];
     }
 
@@ -56,6 +55,7 @@
 
 - (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo {
     if(application.applicationState != UIApplicationStateActive) {
+        // If your application supports multiple types of push notifications, you may wish to limit which ones you send to the TwilioIPMessagingClient here
         [[PushManager sharedManager] receivedNotification:userInfo];
     }
 }

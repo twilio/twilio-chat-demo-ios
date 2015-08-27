@@ -9,6 +9,7 @@
 #import "ChannelTableViewCell.h"
 #import "ChannelViewController.h"
 #import "PushManager.h"
+#import "DemoHelpers.h"
 
 #import <TwilioIPMessagingClient/TwilioIPMessagingClient.h>
 
@@ -40,9 +41,11 @@
     self.client = [TwilioIPMessagingClient ipMessagingClientWithToken:token
                                                              delegate:self];
     
-    [PushManager sharedManager].ipMessagingClient = self.client;
-    
-    [self populateChannels];
+    if (self.client) {
+        [PushManager sharedManager].ipMessagingClient = self.client;
+        
+        [self populateChannels];
+    }
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -107,7 +110,8 @@
                                                                                  type:isPrivate ? TMChannelTypePrivate : TMChannelTypePublic
                                                                            completion:^(TMResultEnum result, TMChannel *channel) {
                                                                                if (result == TMResultSuccess) {
-                                                                                   // TODO: toast user channel creation message
+                                                                                   [DemoHelpers displayToastWithMessage:@"Channel Created"
+                                                                                                                 inView:self.view];
                                                                                    [channel joinWithCompletion:^(TMResultEnum result) {
                                                                                        [channel setAttributes:@{@"topic": @""
                                                                                                                 }
@@ -116,7 +120,8 @@
                                                                                                    }];
                                                                                    }];
                                                                                } else {
-                                                                                   // TODO: toast user channel creation failure message
+                                                                                   [DemoHelpers displayToastWithMessage:@"Channel Create Failed"
+                                                                                                                 inView:self.view];
                                                                                }
                                                                            }];
                                  }]];
@@ -126,6 +131,55 @@
                                                        handler:nil]];
     
     [self presentViewController:newChannelDialog
+                       animated:YES
+                     completion:nil];
+}
+
+- (void)displayOperationsForChannel:(TMChannel *)channel
+                        calledFromSwipe:(BOOL)calledFromSwipe {
+    __weak __typeof(self) weakSelf = self;
+    
+    UIAlertController *channelActions = [UIAlertController alertControllerWithTitle:@"Channel"
+                                                                            message:nil
+                                                                     preferredStyle:UIAlertControllerStyleActionSheet];
+
+    if (channel.status == TMChannelStatusJoined) {
+        [channelActions addAction:[UIAlertAction actionWithTitle:@"Leave"
+                                                           style:UIAlertActionStyleDefault
+                                                         handler:^(UIAlertAction *action) {
+                                                             [weakSelf leaveChannel:channel];
+                                                         }]];
+    }
+    
+    if (channel.status == TMChannelStatusInvited) {
+        [channelActions addAction:[UIAlertAction actionWithTitle:@"Decline Invite"
+                                                           style:UIAlertActionStyleDefault
+                                                         handler:^(UIAlertAction *action) {
+                                                             [weakSelf declineInviteOnChannel:channel];
+                                                         }]];
+    }
+    
+    if (channel.status == TMChannelStatusInvited || channel.status == TMChannelStatusNotParticipating) {
+        [channelActions addAction:[UIAlertAction actionWithTitle:@"Join"
+                                                           style:UIAlertActionStyleDefault
+                                                         handler:^(UIAlertAction *action) {
+                                                             [weakSelf joinChannel:channel];
+                                                         }]];
+    }
+
+    if (!calledFromSwipe) {
+        [channelActions addAction:[UIAlertAction actionWithTitle:@"Destroy"
+                                                           style:UIAlertActionStyleDestructive
+                                                         handler:^(UIAlertAction *action) {
+                                                             [weakSelf destroyChannel:channel];
+                                                         }]];
+    }
+    
+    [channelActions addAction:[UIAlertAction actionWithTitle:@"Cancel"
+                                                       style:UIAlertActionStyleDefault
+                                                     handler:nil]];
+    
+    [self presentViewController:channelActions
                        animated:YES
                      completion:nil];
 }
@@ -159,7 +213,7 @@
                                 [self.tableView reloadData];
                             });
                         } else {
-                            // TODO: let user know channel load failed to start
+                            [DemoHelpers displayToastWithMessage:@"Channel list load failed." inView:self.view];
                         }
                     }];
                 });
@@ -177,6 +231,38 @@
             }
         }];
     });
+}
+
+- (void)leaveChannel:(TMChannel *)channel {
+    [channel leaveWithCompletion:^(TMResultEnum result) {
+        [DemoHelpers displayToastWithMessage:@"Channel Left"
+                                      inView:self.view];
+        [self.tableView reloadData];
+    }];
+}
+
+- (void)destroyChannel:(TMChannel *)channel {
+    [channel destroyWithCompletion:^(TMResultEnum result) {
+        [DemoHelpers displayToastWithMessage:@"Channel Destroyed"
+                                      inView:self.view];
+        [self.tableView reloadData];
+    }];
+}
+
+- (void)joinChannel:(TMChannel *)channel {
+    [channel joinWithCompletion:^(TMResultEnum result) {
+        [DemoHelpers displayToastWithMessage:@"Channel Joined"
+                                      inView:self.view];
+        [self.tableView reloadData];
+    }];
+}
+
+- (void)declineInviteOnChannel:(TMChannel *)channel {
+    [channel declineInvitationWithCompletion:^(TMResultEnum result) {
+        [DemoHelpers displayToastWithMessage:@"Invite Declined"
+                                      inView:self.view];
+        [self.tableView reloadData];
+    }];
 }
 
 #pragma mark - UITableViewDataSource methods
@@ -235,6 +321,14 @@
 
 #pragma mark - UITableViewDelegate methods
 
+- (TMChannel *)channelForIndexPath:(NSIndexPath *)indexPath {
+    if (!self.channels || indexPath.row >= self.channels.count) {
+        return nil;
+    }
+    
+    return self.channels[indexPath.row];
+}
+
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
 
@@ -243,51 +337,45 @@
         return;
     }
     
-    TMChannel *channel = self.channels[indexPath.row];
+    TMChannel *channel = [self channelForIndexPath:indexPath];
     
     if (channel.status == TMChannelStatusJoined) {
         [self performSegueWithIdentifier:@"viewChannel" sender:channel];
     } else {
-        UIAlertController *channelActions = [UIAlertController alertControllerWithTitle:@"Channel"
-                                                                                message:nil
-                                                                         preferredStyle:UIAlertControllerStyleActionSheet];
-        
-        [channelActions addAction:[UIAlertAction actionWithTitle:@"Join"
-                                                           style:UIAlertActionStyleDefault
-                                                         handler:^(UIAlertAction *action) {
-                                                             [channel joinWithCompletion:^(TMResultEnum result) {
-                                                                 // TODO: toast user completion message
-                                                                 [self.tableView reloadData];
-                                                             }];
-                                                         }]];
-        
-        if (channel.status == TMChannelStatusInvited) {
-            [channelActions addAction:[UIAlertAction actionWithTitle:@"Decline Invite"
-                                                               style:UIAlertActionStyleDefault
-                                                             handler:^(UIAlertAction *action) {
-                                                                 [channel declineInvitationWithCompletion:^(TMResultEnum result) {
-                                                                     // TODO: toast user completion message
-                                                                     [self.tableView reloadData];
-                                                                 }];
-                                                             }]];
-        }
-        
-        [channelActions addAction:[UIAlertAction actionWithTitle:@"Destroy"
-                                                           style:UIAlertActionStyleDestructive
-                                                         handler:^(UIAlertAction *action) {
-                                                             [channel destroyWithCompletion:^(TMResultEnum result) {
-                                                                 // TODO: toast user completion message
-                                                                 [self.tableView reloadData];
-                                                             }];
-                                                         }]];
-        
-        [channelActions addAction:[UIAlertAction actionWithTitle:@"Cancel"
-                                                           style:UIAlertActionStyleDefault
-                                                         handler:nil]];
-        
-        [self presentViewController:channelActions
-                           animated:YES
-                         completion:nil];
+        [self displayOperationsForChannel:channel
+                          calledFromSwipe:NO];
+    }
+}
+
+- (NSArray *)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(NSIndexPath *)indexPath {
+    NSMutableArray *actions = [NSMutableArray array];
+    TMChannel *channel = [self channelForIndexPath:indexPath];
+
+    __weak __typeof(self) weakSelf = self;
+    [actions addObject:[UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive
+                                                          title:@"Destroy"
+                                                        handler:^(UITableViewRowAction *action, NSIndexPath *indexPath) {
+                                                            weakSelf.tableView.editing = NO;
+                                                            [self destroyChannel:channel];
+    }]];
+    
+    [actions addObject:[UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleNormal
+                                                          title:@"Actions"
+                                                        handler:^(UITableViewRowAction *action, NSIndexPath *indexPath) {
+                                                            weakSelf.tableView.editing = NO;
+                                                            [self displayOperationsForChannel:channel
+                                                                              calledFromSwipe:YES];
+                                                        }]];
+    
+    return actions;
+}
+
+- (void)tableView:(UITableView *)tableView
+commitEditingStyle:(UITableViewCellEditingStyle)editingStyle
+forRowAtIndexPath:(NSIndexPath *)indexPath {
+    if (editingStyle == UITableViewCellEditingStyleDelete) {
+        TMChannel *channel = [self channelForIndexPath:indexPath];
+        [self destroyChannel:channel];
     }
 }
 
@@ -323,21 +411,15 @@
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client errorReceived:(TMError *)error {
-    // TODO: bring error to users attention
-    NSLog(@"error received: %@", error);
-}
-
-- (void)ipMessagingClientToastSubscribed:(TwilioIPMessagingClient *)client {
-
+    [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"Error received: %@", error] inView:self.view];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client toastReceivedOnChannel:(TMChannel *)channel message:(TMMessage *)message {
-    // TODO: bring new message to user's attention
-    NSLog(@"toast received: %@ / %@", channel, message);
+    [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"New message on channel '%@'.", channel.friendlyName] inView:self.view];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client toastRegistrationFailedWithError:(TMError *)error {
-    // TODO: bring registration for pushes to users attention?
+    // you can bring failures in registration for pushes to user's attention here
 }
 
 @end

@@ -24,13 +24,11 @@
 }
 
 - (void)updatePushToken:(NSData *)token {
-    NSLog(@"@@@@@ received updated token: %@", token);
     self.lastToken = token;
     [self updateIpMessagingClient];
 }
 
 - (void)receivedNotification:(NSDictionary *)notification {
-    NSLog(@"@@@@@ received notification: %@", notification);
     self.lastNotification = notification;
     [self updateIpMessagingClient];
 }
@@ -42,13 +40,11 @@
 
 - (void)updateIpMessagingClient {
     if (self.lastToken) {
-        NSLog(@"@@@@@ registering with token: %@", self.lastToken);
         [self.ipMessagingClient registerWithToken:self.lastToken];
         self.lastToken = nil;
     }
     
     if (self.lastNotification) {
-        NSLog(@"@@@@@ handling notification: %@", self.lastNotification);
         [self.ipMessagingClient handleNotification:self.lastNotification];
         self.lastNotification = nil;
     }

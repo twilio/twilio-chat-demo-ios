@@ -5,19 +5,15 @@
 //  Copyright (c) 2015 Twilio. All rights reserved.
 //
 
-#import <QuartzCore/QuartzCore.h>
-
 #import "ChannelViewController.h"
 #import "MessageTableViewCell.h"
+#import "DemoHelpers.h"
 
 @interface ChannelViewController () <UITableViewDataSource, UITableViewDelegate, TMChannelDelegate, UITextFieldDelegate>
 @property (nonatomic, weak) IBOutlet UITableView *tableView;
 @property (nonatomic, strong) NSMutableOrderedSet *messages;
 @property (weak, nonatomic) IBOutlet UITextField *messageInput;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *keyboardAdjustmentConstraint;
-
-@property (weak, nonatomic) IBOutlet UIView *toastView;
-@property (weak, nonatomic) IBOutlet UILabel *toastViewLabel;
 @end
 
 @implementation ChannelViewController
@@ -42,37 +38,12 @@
     self.messages = [[NSMutableOrderedSet alloc] init];
 }
 
-- (void)displayToastWithMessage:(NSString *)message {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        self.toastViewLabel.text = message;
-        self.toastView.alpha = 0.0f;
-        self.toastView.hidden = NO;
-        
-        [UIView animateWithDuration:1.25f delay:0.0f
-                            options:UIViewAnimationOptionBeginFromCurrentState
-                         animations:^{
-                             self.toastView.alpha = 1.0f;
-                         } completion:^(BOOL finished) {
-                             [UIView animateWithDuration:1.25f delay:1.0f
-                                                 options:UIViewAnimationOptionBeginFromCurrentState
-                                              animations:^{
-                                                  self.toastView.alpha = 0.0f;
-                                              } completion:^(BOOL finished) {
-                                                  self.toastView.hidden = YES;
-                                              }];
-                         }];
-    });
-}
-
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view.
     
     self.tableView.rowHeight = UITableViewAutomaticDimension;
     self.tableView.estimatedRowHeight = 88.0f;
-
-    self.toastView.layer.cornerRadius = 5.0f;
-    self.toastView.alpha = 0.0f;
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -114,42 +85,36 @@
 - (IBAction)performAction:(id)sender {
     UIAlertController *actionsSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     
+    __weak __typeof(self) weakSelf = self;
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Change Friendly Name"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
-                                                       [self changeFriendlyName];
+                                                       [weakSelf changeFriendlyName];
                                                    }]];
     
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Change Topic"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
-                                                       [self changeTopic];
+                                                       [weakSelf changeTopic];
                                                    }]];
     
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"List Members"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
-                                                       TMMembers *members = self.channel.members;
-                                                       // TODO: display in UI
-                                                       NSLog(@"@@@@@ members (%ld): %@", (long)members.allObjects.count, members.allObjects);
+                                                       [weakSelf listMembers];
                                                    }]];
 
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Invite Member"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
-                                                       [self inviteMember];
+                                                       [weakSelf inviteMember];
                                                    }]];
     
     
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Leave"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
-                                                       [self.channel leaveWithCompletion:^(TMResultEnum result) {
-                                                           // TODO: let user know completion result
-                                                           if (result == TMResultSuccess) {
-                                                               [self performSegueWithIdentifier:@"returnToChannels" sender:nil];
-                                                           }
-                                                       }];
+                                                       [weakSelf leaveChannel];
                                                    }]];
 
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Cancel"
@@ -196,7 +161,7 @@
         [self.channel.messages sendMessage:message
                                 completion:^(TMResultEnum result) {
                                     if (result == TMResultFailure) {
-                                        // TODO: let user know result was failure
+                                        [DemoHelpers displayToastWithMessage:@"Failed to send message." inView:self.view];
                                     }
                                 }];
     }
@@ -220,9 +185,11 @@
         [self.channel setFriendlyName:newValue
                            completion:^(TMResultEnum result) {
                                if (result == TMResultSuccess) {
-                                   [weakSelf displayToastWithMessage:@"Friendly name changed."];
+                                   [DemoHelpers displayToastWithMessage:@"Friendly name changed."
+                                                                 inView:weakSelf.view];
                                } else {
-                                   [weakSelf displayToastWithMessage:@"Friendly name could not be changed."];
+                                   [DemoHelpers displayToastWithMessage:@"Friendly name could not be changed."
+                                                                 inView:weakSelf.view];
                                }
                            }];
     };
@@ -250,9 +217,11 @@
         [self.channel setAttributes:attributes
                          completion:^(TMResultEnum result) {
                              if (result == TMResultSuccess) {
-                                 [weakSelf displayToastWithMessage:@"Topic changed."];
+                                 [DemoHelpers displayToastWithMessage:@"Topic changed."
+                                                               inView:weakSelf.view];
                              } else {
-                                 [weakSelf displayToastWithMessage:@"Topic could not be changed."];
+                                 [DemoHelpers displayToastWithMessage:@"Topic could not be changed."
+                                                               inView:weakSelf.view];
                              }
                          }];
     };
@@ -279,9 +248,11 @@
         [self.channel.members inviteByIdentity:newValue
                                     completion:^(TMResultEnum result) {
                                         if (result == TMResultSuccess) {
-                                            [weakSelf displayToastWithMessage:@"User invited."];
+                                            [DemoHelpers displayToastWithMessage:@"User invited."
+                                                                          inView:weakSelf.view];
                                         } else {
-                                            [weakSelf displayToastWithMessage:@"User could not be invited."];
+                                            [DemoHelpers displayToastWithMessage:@"User could not be invited."
+                                                                          inView:weakSelf.view];
                                         }
                                     }];
     };
@@ -291,6 +262,27 @@
                  initialValue:initialValue
                   actionTitle:actionTitle
                        action:action];
+}
+
+- (void)listMembers {
+    NSArray *members = [self.channel.members.allObjects sortedArrayUsingComparator:^NSComparisonResult(TMMember *obj1, TMMember *obj2) {
+        return [obj1.identity compare:obj2.identity options:NSCaseInsensitiveSearch];
+    }];
+    NSMutableString *membersList = [NSMutableString string];
+    [members enumerateObjectsUsingBlock:^(TMMember *member, NSUInteger idx, BOOL *stop) {
+        [membersList appendFormat:@"%@%@", membersList.length>0?@", ":@"", member.identity];
+    }];
+    [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"Members:\n%@", membersList] inView:self.view];
+}
+
+- (void)leaveChannel {
+    [self.channel leaveWithCompletion:^(TMResultEnum result) {
+        if (result == TMResultSuccess) {
+            [self performSegueWithIdentifier:@"returnToChannels" sender:nil];
+        } else {
+            [DemoHelpers displayToastWithMessage:@"Failed to leave channel." inView:self.view];
+        }
+    }];
 }
 
 - (void)promptUserWithTitle:(NSString *)title
@@ -376,7 +368,8 @@
 #pragma mark - TMChannelDelegate
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelChanged:(TMChannel *)channel {
-    [self displayToastWithMessage:[NSString stringWithFormat:@"Channel attributes changed."]];
+    [DemoHelpers displayToastWithMessage:@"Channel attributes changed."
+                                  inView:self.view];
     
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.tableView reloadData];
@@ -392,7 +385,8 @@
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client channel:(TMChannel *)channel memberJoined:(TMMember *)member {
-    [self displayToastWithMessage:[NSString stringWithFormat:@"%@ joined the channel.", member.identity]];
+    [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ joined the channel.", member.identity]
+                                  inView:self.view];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client channel:(TMChannel *)channel memberChanged:(TMMember *)member {
@@ -400,7 +394,8 @@
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client channel:(TMChannel *)channel memberLeft:(TMMember *)member {
-    [self displayToastWithMessage:[NSString stringWithFormat:@"%@ left the channel.", member.identity]];
+    [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ left the channel.", member.identity]
+                                  inView:self.view];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client channel:(TMChannel *)channel messageAdded:(TMMessage *)message {
