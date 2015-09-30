@@ -219,7 +219,7 @@
                 });
             } else {
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"IPM Demo" message:@"Failed to load channels." preferredStyle:UIAlertControllerStyleAlert];
+                    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"IP Messaging Demo" message:@"Failed to load channels." preferredStyle:UIAlertControllerStyleAlert];
                     [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
                     [self presentViewController:alert animated:YES completion:nil];
                     
