@@ -194,6 +194,31 @@
                                                     <outlet property="dateLabel" destination="nCF-xY-PB7" id="8Yi-b2-FlW"/>
                                                 </connections>
                                             </tableViewCell>
+                                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="default" indentationWidth="10" reuseIdentifier="typing" rowHeight="22" id="gfL-YG-Ga0" customClass="MemberTypingTableViewCell">
+                                                <rect key="frame" x="0.0" y="147" width="600" height="22"/>
+                                                <autoresizingMask key="autoresizingMask"/>
+                                                <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="gfL-YG-Ga0" id="Lhp-VC-fId">
+                                                    <rect key="frame" x="0.0" y="0.0" width="600" height="21"/>
+                                                    <autoresizingMask key="autoresizingMask"/>
+                                                    <subviews>
+                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="751" verticalHuggingPriority="751" horizontalCompressionResistancePriority="751" verticalCompressionResistancePriority="751" text="user is typing..." textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="4Ou-e3-0tR">
+                                                            <rect key="frame" x="8" y="3" width="584" height="15"/>
+                                                            <fontDescription key="fontDescription" type="system" pointSize="12"/>
+                                                            <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
+                                                            <nil key="highlightedColor"/>
+                                                        </label>
+                                                    </subviews>
+                                                    <constraints>
+                                                        <constraint firstItem="4Ou-e3-0tR" firstAttribute="top" secondItem="Lhp-VC-fId" secondAttribute="top" constant="3" id="0ky-xd-vcm"/>
+                                                        <constraint firstItem="4Ou-e3-0tR" firstAttribute="leading" secondItem="Lhp-VC-fId" secondAttribute="leading" constant="8" id="HOf-3x-uVg"/>
+                                                        <constraint firstAttribute="trailing" secondItem="4Ou-e3-0tR" secondAttribute="trailing" constant="8" id="OY1-ou-EPr"/>
+                                                        <constraint firstAttribute="bottom" secondItem="4Ou-e3-0tR" secondAttribute="bottom" constant="3" id="Tm1-d1-BCz"/>
+                                                    </constraints>
+                                                </tableViewCellContentView>
+                                                <connections>
+                                                    <outlet property="typingLabel" destination="4Ou-e3-0tR" id="7OF-RC-Kpa"/>
+                                                </connections>
+                                            </tableViewCell>
                                         </prototypes>
                                         <connections>
                                             <outlet property="dataSource" destination="0Cj-at-BRt" id="Fvw-8v-wkN"/>
