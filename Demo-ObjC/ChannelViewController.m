@@ -152,6 +152,11 @@
 
 #pragma mark - UITextFieldDelegate
 
+- (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string {
+    [self.channel typing];
+    return YES;
+}
+
 - (BOOL)textFieldShouldReturn:(UITextField *)textField {
     if (textField.text.length == 0) {
         [self.view endEditing:YES];
@@ -367,7 +372,8 @@
 
 #pragma mark - TMChannelDelegate
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelChanged:(TMChannel *)channel {
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+           channelChanged:(TMChannel *)channel {
     [DemoHelpers displayToastWithMessage:@"Channel attributes changed."
                                   inView:self.view];
     
@@ -376,7 +382,8 @@
     });
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelDeleted:(TMChannel *)channel {
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+           channelDeleted:(TMChannel *)channel {
     dispatch_async(dispatch_get_main_queue(), ^{
         if (channel == self.channel) {
             [self performSegueWithIdentifier:@"returnToChannels" sender:nil];
@@ -384,22 +391,42 @@
     });
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channel:(TMChannel *)channel memberJoined:(TMMember *)member {
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+                  channel:(TMChannel *)channel
+             memberJoined:(TMMember *)member {
     [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ joined the channel.", member.identity]
                                   inView:self.view];
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channel:(TMChannel *)channel memberChanged:(TMMember *)member {
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+                  channel:(TMChannel *)channel
+            memberChanged:(TMMember *)member {
 
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channel:(TMChannel *)channel memberLeft:(TMMember *)member {
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+                  channel:(TMChannel *)channel
+               memberLeft:(TMMember *)member {
     [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ left the channel.", member.identity]
                                   inView:self.view];
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channel:(TMChannel *)channel messageAdded:(TMMessage *)message {
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+                  channel:(TMChannel *)channel
+             messageAdded:(TMMessage *)message {
     [self addMessages:@[message]];
+}
+
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+   typingStartedOnChannel:(TMChannel *)channel
+                   member:(TMMember *)member {
+
+}
+
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+     typingEndedOnChannel:(TMChannel *)channel
+                   member:(TMMember *)member {
+
 }
 
 @end
