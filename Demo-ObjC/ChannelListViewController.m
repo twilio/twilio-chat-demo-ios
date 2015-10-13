@@ -8,16 +8,13 @@
 #import "ChannelListViewController.h"
 #import "ChannelTableViewCell.h"
 #import "ChannelViewController.h"
-#import "PushManager.h"
+#import "IPMessagingManager.h"
 #import "DemoHelpers.h"
-
-#import <TwilioIPMessagingClient/TwilioIPMessagingClient.h>
 
 @interface ChannelListViewController () <TwilioIPMessagingClientDelegate, UITableViewDataSource, UITableViewDelegate>
 @property (nonatomic, weak) IBOutlet UITableView *tableView;
 
 @property (nonatomic, strong) UIRefreshControl *refreshControl;
-@property (nonatomic, strong) TwilioIPMessagingClient *client;
 @property (nonatomic, strong) TMChannels *channelsList;
 @property (nonatomic, strong) NSMutableOrderedSet *channels;
 @end
@@ -37,14 +34,9 @@
                             action:@selector(refreshChannels)
                   forControlEvents:UIControlEventValueChanged];
 
-#error - Use the capability string generated in the Twilio SDK portal to populate the token variable and delete this line to build the Demo.
-    NSString *token = @"";
-    self.client = [TwilioIPMessagingClient ipMessagingClientWithToken:token
-                                                             delegate:self];
-    
-    if (self.client) {
-        [PushManager sharedManager].ipMessagingClient = self.client;
-        
+    TwilioIPMessagingClient *client = [[IPMessagingManager sharedManager] client];
+    if (client) {
+        client.delegate = self;
         [self populateChannels];
     }
 }
@@ -65,6 +57,11 @@
 
 - (IBAction)returnFromChannel:(UIStoryboardSegue *)segue {
     [self.tableView reloadData];
+}
+
+- (IBAction)logoutTapped:(id)sender {
+    [[IPMessagingManager sharedManager] logout];
+    [[IPMessagingManager sharedManager] presentRootViewController];
 }
 
 - (IBAction)newChannelTapped:(id)sender {
@@ -199,7 +196,7 @@
     [self.tableView reloadData];
     
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        [self.client channelsListWithCompletion:^(TMResultEnum result, TMChannels *channelsList) {
+        [[[IPMessagingManager sharedManager] client] channelsListWithCompletion:^(TMResultEnum result, TMChannels *channelsList) {
             if (result == TMResultSuccess) {
                 self.channelsList = channelsList;
                 

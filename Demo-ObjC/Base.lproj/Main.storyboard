@@ -6,10 +6,58 @@
         <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
     </dependencies>
     <scenes>
+        <!--Login View Controller-->
+        <scene sceneID="v2j-aF-g45">
+            <objects>
+                <viewController storyboardIdentifier="login" id="Qo7-m1-jq2" customClass="LoginViewController" sceneMemberID="viewController">
+                    <layoutGuides>
+                        <viewControllerLayoutGuide type="top" id="Npw-dw-dW9"/>
+                        <viewControllerLayoutGuide type="bottom" id="PVP-yx-LhR"/>
+                    </layoutGuides>
+                    <view key="view" contentMode="scaleToFill" id="Jz4-cL-5da">
+                        <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <textField opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="your name" textAlignment="center" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="dVD-qL-e70">
+                                <rect key="frame" x="225" y="250" width="150" height="30"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="150" id="C0h-wg-fB7"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <textInputTraits key="textInputTraits" autocorrectionType="no"/>
+                                <connections>
+                                    <outlet property="delegate" destination="Qo7-m1-jq2" id="gUq-Uv-Sf2"/>
+                                </connections>
+                            </textField>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MvN-1a-Ufe">
+                                <rect key="frame" x="281" y="288" width="38" height="30"/>
+                                <state key="normal" title="Login"/>
+                                <connections>
+                                    <action selector="loginTapped:" destination="Qo7-m1-jq2" eventType="touchUpInside" id="xyL-Rs-ZF2"/>
+                                </connections>
+                            </button>
+                        </subviews>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <constraints>
+                            <constraint firstItem="dVD-qL-e70" firstAttribute="centerY" secondItem="Jz4-cL-5da" secondAttribute="centerY" constant="-35" id="9zV-rU-plm"/>
+                            <constraint firstItem="MvN-1a-Ufe" firstAttribute="top" secondItem="dVD-qL-e70" secondAttribute="bottom" constant="8" id="Rk3-a8-j2G"/>
+                            <constraint firstItem="MvN-1a-Ufe" firstAttribute="centerX" secondItem="dVD-qL-e70" secondAttribute="centerX" id="WiN-fU-Cpk"/>
+                            <constraint firstItem="dVD-qL-e70" firstAttribute="centerX" secondItem="Jz4-cL-5da" secondAttribute="centerX" id="YKA-1p-86F"/>
+                            <constraint firstItem="dVD-qL-e70" firstAttribute="centerY" secondItem="Jz4-cL-5da" secondAttribute="centerY" constant="-35" id="lUP-kL-iEp"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="nameTextField" destination="dVD-qL-e70" id="qq9-1y-Asv"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="Iyj-cB-kLl" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-470" y="-378"/>
+        </scene>
         <!--Navigation Controller-->
         <scene sceneID="JpC-v8-qNy">
             <objects>
-                <navigationController id="FxL-sU-6yS" sceneMemberID="viewController">
+                <navigationController storyboardIdentifier="navigation" id="FxL-sU-6yS" sceneMemberID="viewController">
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="hIl-pp-rM8">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
@@ -114,6 +162,11 @@
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="4rk-2U-zcS">
+                        <barButtonItem key="leftBarButtonItem" title="Logout" id="Rz5-Hw-Whb">
+                            <connections>
+                                <action selector="logoutTapped:" destination="BYZ-38-t0r" id="lcB-at-EI9"/>
+                            </connections>
+                        </barButtonItem>
                         <barButtonItem key="rightBarButtonItem" systemItem="add" id="uNh-lv-gN5">
                             <connections>
                                 <action selector="newChannelTapped:" destination="BYZ-38-t0r" id="qaU-pB-u06"/>
