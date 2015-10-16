@@ -62,6 +62,11 @@
                                                    object:self.view.window];
         
         [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(keyboardDidShow:)
+                                                     name:UIKeyboardDidShowNotification
+                                                   object:self.view.window];
+        
+        [[NSNotificationCenter defaultCenter] addObserver:self
                                                  selector:@selector(keyboardWillHide:)
                                                      name:UIKeyboardWillHideNotification
                                                    object:self.view.window];
@@ -368,7 +373,10 @@
     
     self.keyboardAdjustmentConstraint.constant = keyboardHeight;
     [self.view setNeedsLayout];
-    [self scrollToBottomMessageWithDelay:0.1];
+}
+
+- (void)keyboardDidShow:(NSNotification *)notification {
+    [self scrollToBottomMessage];
 }
 
 - (void)keyboardWillHide:(NSNotification *)notification {
@@ -387,14 +395,8 @@
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.tableView reloadData];
         if (self.messages.count > 0) {
-            [self scrollToBottomMessageWithDelay:0.0];
+            [self scrollToBottomMessage];
         }
-    });
-}
-
-- (void)scrollToBottomMessageWithDelay:(CGFloat)delay {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [self scrollToBottomMessage];
     });
 }
 
