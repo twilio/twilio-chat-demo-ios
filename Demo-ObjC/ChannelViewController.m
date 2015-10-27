@@ -389,7 +389,7 @@
     [self addMessages:self.channel.messages.allObjects];
 }
 
-- (void)addMessages:(NSArray /*<TMMessage *>*/*)messages {
+- (void)addMessages:(NSArray<TMMessage *> *)messages {
     [self.messages addObjectsFromArray:messages];
     [self sortMessages];
     dispatch_async(dispatch_get_main_queue(), ^{
