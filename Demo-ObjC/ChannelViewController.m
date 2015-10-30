@@ -7,6 +7,7 @@
 
 #import "ChannelViewController.h"
 #import "MessageTableViewCell.h"
+#import "MemberTypingTableViewCell.h"
 #import "DemoHelpers.h"
 
 @interface ChannelViewController () <UITableViewDataSource, UITableViewDelegate, TMChannelDelegate, UITextFieldDelegate>
@@ -14,6 +15,7 @@
 @property (nonatomic, strong) NSMutableOrderedSet *messages;
 @property (weak, nonatomic) IBOutlet UITextField *messageInput;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *keyboardAdjustmentConstraint;
+@property (nonatomic, strong) NSMutableArray *typingUsers;
 @end
 
 @implementation ChannelViewController
@@ -36,6 +38,7 @@
 
 - (void)sharedInit {
     self.messages = [[NSMutableOrderedSet alloc] init];
+    self.typingUsers = [NSMutableArray array];
 }
 
 - (void)viewDidLoad {
@@ -44,6 +47,7 @@
     
     self.tableView.rowHeight = UITableViewAutomaticDimension;
     self.tableView.estimatedRowHeight = 88.0f;
+    self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -55,6 +59,11 @@
         [[NSNotificationCenter defaultCenter] addObserver:self
                                                  selector:@selector(keyboardWillShow:)
                                                      name:UIKeyboardWillShowNotification
+                                                   object:self.view.window];
+        
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(keyboardDidShow:)
+                                                     name:UIKeyboardDidShowNotification
                                                    object:self.view.window];
         
         [[NSNotificationCenter defaultCenter] addObserver:self
@@ -129,17 +138,53 @@
 #pragma mark - UITableViewDataSource
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return self.messages.count;
+    NSInteger count = self.messages.count;
+    if (self.typingUsers.count > 0) {
+        count++;
+    }
+    return count;
+}
+
+- (NSString *)typingUsersString {
+    NSArray *typingUsers = [self.typingUsers copy];
+    
+    NSMutableString *ret = [NSMutableString string];
+
+    for (int ndx=0; ndx < typingUsers.count; ndx++) {
+        TMMember *member = (TMMember *)typingUsers[ndx];
+        if (ndx > 0 && ndx < typingUsers.count - 1) {
+            [ret appendString:@", "];
+        } else if (ndx > 0 && ndx == typingUsers.count - 1) {
+            [ret appendString:@" and "];
+        }
+        [ret appendString:member.identity];
+    }
+    
+    return [NSString stringWithFormat:@"%@ %@ typing...", ret, typingUsers.count > 1 ? @"are" : @"is"];
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    MessageTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"message"];
-    TMMessage *message = self.messages[indexPath.row];
+    UITableViewCell *cell = nil;
     
-    cell.authorLabel.text = message.author;
-    cell.dateLabel.text = message.timestamp;
-    cell.bodyLabel.text = message.body;
-    [cell layoutIfNeeded];
+    if (self.typingUsers.count > 0 && indexPath.row == self.messages.count) {
+        NSString *message = [self typingUsersString];
+        MemberTypingTableViewCell *typingCell = [tableView dequeueReusableCellWithIdentifier:@"typing"];
+
+        typingCell.typingLabel.text = message;
+        [typingCell layoutIfNeeded];
+        
+        cell = typingCell;
+    } else {
+        MessageTableViewCell *messageCell = [tableView dequeueReusableCellWithIdentifier:@"message"];
+        TMMessage *message = self.messages[indexPath.row];
+        
+        messageCell.authorLabel.text = message.author;
+        messageCell.dateLabel.text = message.timestamp;
+        messageCell.bodyLabel.text = message.body;
+        [messageCell layoutIfNeeded];
+        
+        cell = messageCell;
+    }
     
     return cell;
 }
@@ -151,6 +196,11 @@
 }
 
 #pragma mark - UITextFieldDelegate
+
+- (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string {
+    [self.channel typing];
+    return YES;
+}
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField {
     if (textField.text.length == 0) {
@@ -323,9 +373,10 @@
     
     self.keyboardAdjustmentConstraint.constant = keyboardHeight;
     [self.view setNeedsLayout];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [self scrollToBottomMessage];
-    });
+}
+
+- (void)keyboardDidShow:(NSNotification *)notification {
+    [self scrollToBottomMessage];
 }
 
 - (void)keyboardWillHide:(NSNotification *)notification {
@@ -338,15 +389,13 @@
     [self addMessages:self.channel.messages.allObjects];
 }
 
-- (void)addMessages:(NSArray /*<TMMessage *>*/*)messages {
+- (void)addMessages:(NSArray<TMMessage *> *)messages {
     [self.messages addObjectsFromArray:messages];
     [self sortMessages];
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.tableView reloadData];
         if (self.messages.count > 0) {
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                [self scrollToBottomMessage];
-            });
+            [self scrollToBottomMessage];
         }
     });
 }
@@ -356,8 +405,11 @@
         return;
     }
     
-    NSIndexPath *bottomMessageIndex = [NSIndexPath indexPathForRow:self.messages.count - 1 inSection:0];
-    [self.tableView scrollToRowAtIndexPath:bottomMessageIndex atScrollPosition:UITableViewScrollPositionBottom animated:NO];
+    NSIndexPath *bottomMessageIndex = [NSIndexPath indexPathForRow:[self.tableView numberOfRowsInSection:0] - 1
+                                                         inSection:0];
+    [self.tableView scrollToRowAtIndexPath:bottomMessageIndex
+                          atScrollPosition:UITableViewScrollPositionBottom
+                                  animated:NO];
 }
 
 - (void)sortMessages {
@@ -367,7 +419,8 @@
 
 #pragma mark - TMChannelDelegate
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelChanged:(TMChannel *)channel {
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+           channelChanged:(TMChannel *)channel {
     [DemoHelpers displayToastWithMessage:@"Channel attributes changed."
                                   inView:self.view];
     
@@ -376,7 +429,8 @@
     });
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelDeleted:(TMChannel *)channel {
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+           channelDeleted:(TMChannel *)channel {
     dispatch_async(dispatch_get_main_queue(), ^{
         if (channel == self.channel) {
             [self performSegueWithIdentifier:@"returnToChannels" sender:nil];
@@ -384,22 +438,46 @@
     });
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channel:(TMChannel *)channel memberJoined:(TMMember *)member {
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+                  channel:(TMChannel *)channel
+             memberJoined:(TMMember *)member {
     [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ joined the channel.", member.identity]
                                   inView:self.view];
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channel:(TMChannel *)channel memberChanged:(TMMember *)member {
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+                  channel:(TMChannel *)channel
+            memberChanged:(TMMember *)member {
 
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channel:(TMChannel *)channel memberLeft:(TMMember *)member {
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+                  channel:(TMChannel *)channel
+               memberLeft:(TMMember *)member {
     [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ left the channel.", member.identity]
                                   inView:self.view];
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channel:(TMChannel *)channel messageAdded:(TMMessage *)message {
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+                  channel:(TMChannel *)channel
+             messageAdded:(TMMessage *)message {
     [self addMessages:@[message]];
+}
+
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+   typingStartedOnChannel:(TMChannel *)channel
+                   member:(TMMember *)member {
+    [self.typingUsers addObject:member];
+    [self.tableView reloadData];
+    [self scrollToBottomMessage];
+}
+
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+     typingEndedOnChannel:(TMChannel *)channel
+                   member:(TMMember *)member {
+    [self.typingUsers removeObject:member];
+    [self.tableView reloadData];
+    [self scrollToBottomMessage];
 }
 
 @end

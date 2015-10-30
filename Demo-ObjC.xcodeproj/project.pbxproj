@@ -15,9 +15,11 @@
 		58223ACB1B69571C00F0DF97 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 58223AC91B69571C00F0DF97 /* LaunchScreen.xib */; };
 		58223B4C1B6AA07600F0DF97 /* libc++.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 58223B4B1B6AA07600F0DF97 /* libc++.dylib */; };
 		583D81461B6FA82E00BF3C56 /* ChannelTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 583D81451B6FA82E00BF3C56 /* ChannelTableViewCell.m */; };
+		58652D051BC5BBC800250FEA /* MemberTypingTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 58652D041BC5BBC800250FEA /* MemberTypingTableViewCell.m */; settings = {ASSET_TAGS = (); }; };
 		58D509101B7B78D20093B5F1 /* ChannelViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 58D5090F1B7B78D20093B5F1 /* ChannelViewController.m */; };
 		58D509131B7B7AF00093B5F1 /* MessageTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 58D509121B7B7AF00093B5F1 /* MessageTableViewCell.m */; };
-		58D5091E1B7E83B50093B5F1 /* PushManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 58D5091D1B7E83B50093B5F1 /* PushManager.m */; };
+		58F878431BCD75450097F014 /* LoginViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 58F878421BCD75450097F014 /* LoginViewController.m */; settings = {ASSET_TAGS = (); }; };
+		58F878461BCDA8930097F014 /* IPMessagingManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 58F878451BCDA8930097F014 /* IPMessagingManager.m */; settings = {ASSET_TAGS = (); }; };
 		58FB4B201B8E5A8800DDF5B8 /* DemoHelpers.m in Sources */ = {isa = PBXBuildFile; fileRef = 58FB4B1F1B8E5A8800DDF5B8 /* DemoHelpers.m */; };
 /* End PBXBuildFile section */
 
@@ -35,12 +37,16 @@
 		58223B4B1B6AA07600F0DF97 /* libc++.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libc++.dylib"; path = "usr/lib/libc++.dylib"; sourceTree = SDKROOT; };
 		583D81441B6FA82E00BF3C56 /* ChannelTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ChannelTableViewCell.h; sourceTree = "<group>"; };
 		583D81451B6FA82E00BF3C56 /* ChannelTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ChannelTableViewCell.m; sourceTree = "<group>"; };
+		58652D031BC5BBC800250FEA /* MemberTypingTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MemberTypingTableViewCell.h; sourceTree = "<group>"; };
+		58652D041BC5BBC800250FEA /* MemberTypingTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MemberTypingTableViewCell.m; sourceTree = "<group>"; };
 		58D5090E1B7B78D20093B5F1 /* ChannelViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ChannelViewController.h; sourceTree = "<group>"; };
 		58D5090F1B7B78D20093B5F1 /* ChannelViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ChannelViewController.m; sourceTree = "<group>"; };
 		58D509111B7B7AF00093B5F1 /* MessageTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MessageTableViewCell.h; sourceTree = "<group>"; };
 		58D509121B7B7AF00093B5F1 /* MessageTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MessageTableViewCell.m; sourceTree = "<group>"; };
-		58D5091C1B7E83B50093B5F1 /* PushManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PushManager.h; sourceTree = "<group>"; };
-		58D5091D1B7E83B50093B5F1 /* PushManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PushManager.m; sourceTree = "<group>"; };
+		58F878411BCD75450097F014 /* LoginViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LoginViewController.h; sourceTree = "<group>"; };
+		58F878421BCD75450097F014 /* LoginViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LoginViewController.m; sourceTree = "<group>"; };
+		58F878441BCDA8930097F014 /* IPMessagingManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMessagingManager.h; sourceTree = "<group>"; };
+		58F878451BCDA8930097F014 /* IPMessagingManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IPMessagingManager.m; sourceTree = "<group>"; };
 		58FB4B1E1B8E5A8800DDF5B8 /* DemoHelpers.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DemoHelpers.h; sourceTree = "<group>"; };
 		58FB4B1F1B8E5A8800DDF5B8 /* DemoHelpers.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DemoHelpers.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -79,6 +85,8 @@
 			children = (
 				58223ABE1B69571C00F0DF97 /* AppDelegate.h */,
 				58223ABF1B69571C00F0DF97 /* AppDelegate.m */,
+				58F878411BCD75450097F014 /* LoginViewController.h */,
+				58F878421BCD75450097F014 /* LoginViewController.m */,
 				58223AC11B69571C00F0DF97 /* ChannelListViewController.h */,
 				58223AC21B69571C00F0DF97 /* ChannelListViewController.m */,
 				583D81441B6FA82E00BF3C56 /* ChannelTableViewCell.h */,
@@ -87,14 +95,16 @@
 				58D5090F1B7B78D20093B5F1 /* ChannelViewController.m */,
 				58D509111B7B7AF00093B5F1 /* MessageTableViewCell.h */,
 				58D509121B7B7AF00093B5F1 /* MessageTableViewCell.m */,
-				58D5091C1B7E83B50093B5F1 /* PushManager.h */,
-				58D5091D1B7E83B50093B5F1 /* PushManager.m */,
+				58652D031BC5BBC800250FEA /* MemberTypingTableViewCell.h */,
+				58652D041BC5BBC800250FEA /* MemberTypingTableViewCell.m */,
 				58223AC41B69571C00F0DF97 /* Main.storyboard */,
 				58223AC71B69571C00F0DF97 /* Images.xcassets */,
 				58223AC91B69571C00F0DF97 /* LaunchScreen.xib */,
 				58223ABA1B69571C00F0DF97 /* Supporting Files */,
 				58FB4B1E1B8E5A8800DDF5B8 /* DemoHelpers.h */,
 				58FB4B1F1B8E5A8800DDF5B8 /* DemoHelpers.m */,
+				58F878441BCDA8930097F014 /* IPMessagingManager.h */,
+				58F878451BCDA8930097F014 /* IPMessagingManager.m */,
 			);
 			path = "Demo-ObjC";
 			sourceTree = "<group>";
@@ -134,7 +144,7 @@
 		58223AAF1B69571C00F0DF97 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0640;
+				LastUpgradeCheck = 0700;
 				ORGANIZATIONNAME = Twilio;
 				TargetAttributes = {
 					58223AB61B69571C00F0DF97 = {
@@ -182,10 +192,12 @@
 				58223AC31B69571C00F0DF97 /* ChannelListViewController.m in Sources */,
 				58D509101B7B78D20093B5F1 /* ChannelViewController.m in Sources */,
 				583D81461B6FA82E00BF3C56 /* ChannelTableViewCell.m in Sources */,
+				58F878431BCD75450097F014 /* LoginViewController.m in Sources */,
+				58652D051BC5BBC800250FEA /* MemberTypingTableViewCell.m in Sources */,
 				58223AC01B69571C00F0DF97 /* AppDelegate.m in Sources */,
-				58D5091E1B7E83B50093B5F1 /* PushManager.m in Sources */,
 				58223ABD1B69571C00F0DF97 /* main.m in Sources */,
 				58D509131B7B7AF00093B5F1 /* MessageTableViewCell.m in Sources */,
+				58F878461BCDA8930097F014 /* IPMessagingManager.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -231,7 +243,9 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_BITCODE = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -275,6 +289,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_BITCODE = NO;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -303,6 +318,7 @@
 				);
 				INFOPLIST_FILE = "Demo-ObjC/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.twilio.ipmessaging.client.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				USE_HEADERMAP = NO;
 			};
@@ -318,6 +334,7 @@
 				);
 				INFOPLIST_FILE = "Demo-ObjC/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.twilio.ipmessaging.client.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				USE_HEADERMAP = NO;
 			};

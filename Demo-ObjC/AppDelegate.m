@@ -6,7 +6,7 @@
 //
 
 #import "AppDelegate.h"
-#import "PushManager.h"
+#import "IPMessagingManager.h"
 
 @interface AppDelegate ()
 
@@ -31,23 +31,25 @@
          (UIUserNotificationTypeBadge | UIUserNotificationTypeSound | UIUserNotificationTypeAlert)];
 #pragma GCC diagnostic pop
     }
+
+    [[IPMessagingManager sharedManager] presentRootViewController];
     
     return YES;
 }
 
 - (void)application:(UIApplication*)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData*)deviceToken {
-    [[PushManager sharedManager] updatePushToken:deviceToken];
+    [[IPMessagingManager sharedManager] updatePushToken:deviceToken];
 }
 
 - (void)application:(UIApplication*)application didFailToRegisterForRemoteNotificationsWithError:(NSError*)error {
     NSLog(@"Failed to get token, error: %@", error);
-    [[PushManager sharedManager] updatePushToken:nil];
+    [[IPMessagingManager sharedManager] updatePushToken:nil];
 }
 
 - (void)application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings {
     if(notificationSettings.types == UIUserNotificationTypeNone) {
         NSLog(@"Failed to get token, error: Notifications are not allowed");
-        [[PushManager sharedManager] updatePushToken:nil];
+        [[IPMessagingManager sharedManager] updatePushToken:nil];
     } else {
         [[UIApplication sharedApplication] registerForRemoteNotifications];
     }
@@ -56,7 +58,7 @@
 - (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo {
     if(application.applicationState != UIApplicationStateActive) {
         // If your application supports multiple types of push notifications, you may wish to limit which ones you send to the TwilioIPMessagingClient here
-        [[PushManager sharedManager] receivedNotification:userInfo];
+        [[IPMessagingManager sharedManager] receivedNotification:userInfo];
     }
 }
 
