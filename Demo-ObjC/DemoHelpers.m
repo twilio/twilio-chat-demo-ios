@@ -62,11 +62,11 @@
                                                              constant:8.0]];
         [constraints addObject:[NSLayoutConstraint constraintWithItem:toastViewLabel
                                                             attribute:NSLayoutAttributeBottom
-                                                            relatedBy:NSLayoutRelationGreaterThanOrEqual
+                                                            relatedBy:NSLayoutRelationLessThanOrEqual
                                                                toItem:toastView
                                                             attribute:NSLayoutAttributeBottom
                                                            multiplier:1.0
-                                                             constant:8.0]];
+                                                             constant:-8.0]];
         [toastView addConstraints:constraints];
         
         toastViewLabel.numberOfLines = 0;
