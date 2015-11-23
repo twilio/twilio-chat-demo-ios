@@ -101,6 +101,12 @@
                                                        [weakSelf changeFriendlyName];
                                                    }]];
     
+    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Change Unique Name"
+                                                     style:UIAlertActionStyleDefault
+                                                   handler:^(UIAlertAction *action) {
+                                                       [weakSelf changeUniqueName];
+                                                   }]];
+
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Change Topic"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
@@ -194,6 +200,35 @@
 - (BOOL)tableView:(UITableView *)tableView shouldHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
     return NO;
 }
+- (NSArray *)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(NSIndexPath *)indexPath {
+    NSMutableArray *actions = [NSMutableArray array];
+    TMMessage *message = [self messageForIndexPath:indexPath];
+    
+    __weak __typeof(self) weakSelf = self;
+    [actions addObject:[UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive
+                                                          title:@"Destroy"
+                                                        handler:^(UITableViewRowAction *action, NSIndexPath *indexPath) {
+                                                            weakSelf.tableView.editing = NO;
+                                                            [self destroyMessage:message];
+                                                        }]];
+    
+    [actions addObject:[UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleNormal
+                                                          title:@"Edit"
+                                                        handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
+                                                            [self changeMessage:message];
+                                                        }]];
+    
+    return actions;
+}
+
+- (void)tableView:(UITableView *)tableView
+commitEditingStyle:(UITableViewCellEditingStyle)editingStyle
+forRowAtIndexPath:(NSIndexPath *)indexPath {
+    if (editingStyle == UITableViewCellEditingStyleDelete) {
+        TMMessage *message = [self messageForIndexPath:indexPath];
+        [self destroyMessage:message];
+    }
+}
 
 #pragma mark - UITextFieldDelegate
 
@@ -283,6 +318,60 @@
                        action:action];
 }
 
+- (void)changeUniqueName {
+    NSString *title = @"Unique Name";
+    NSString *placeholder = @"Unique Name";
+    NSString *initialValue = [self.channel uniqueName];
+    NSString *actionTitle = @"Set";
+    
+    __weak __typeof(self) weakSelf = self;
+    void (^action)(NSString *) = ^void(NSString *newValue) {
+        [self.channel setUniqueName:newValue
+                         completion:^(TMResultEnum result) {
+                             if (result == TMResultSuccess) {
+                                 [DemoHelpers displayToastWithMessage:@"Unique Name changed."
+                                                               inView:weakSelf.view];
+                             } else {
+                                 [DemoHelpers displayToastWithMessage:@"Unique Name could not be changed to the specified value."
+                                                               inView:weakSelf.view];
+                             }
+                         }];
+    };
+    
+    [self promptUserWithTitle:title
+                  placeholder:placeholder
+                 initialValue:initialValue
+                  actionTitle:actionTitle
+                       action:action];
+}
+
+- (void)changeMessage:(TMMessage *)message {
+    NSString *title = @"Message";
+    NSString *placeholder = @"Message";
+    NSString *initialValue = [message body];
+    NSString *actionTitle = @"Set";
+    
+    __weak __typeof(self) weakSelf = self;
+    void (^action)(NSString *) = ^void(NSString *newValue) {
+        [message updateBody:newValue
+                 completion:^(TMResultEnum result) {
+                     if (result == TMResultSuccess) {
+                         [DemoHelpers displayToastWithMessage:@"Body changed."
+                                                       inView:weakSelf.view];
+                     } else {
+                         [DemoHelpers displayToastWithMessage:@"Body could not be updated."
+                                                       inView:weakSelf.view];
+                     }
+                 }];
+    };
+    
+    [self promptUserWithTitle:title
+                  placeholder:placeholder
+                 initialValue:initialValue
+                  actionTitle:actionTitle
+                       action:action];
+}
+
 - (void)inviteMember {
     NSString *title = @"Invite";
     NSString *placeholder = @"User To Invite";
@@ -331,6 +420,16 @@
             [self performSegueWithIdentifier:@"returnToChannels" sender:nil];
         } else {
             [DemoHelpers displayToastWithMessage:@"Failed to leave channel." inView:self.view];
+        }
+    }];
+}
+
+- (void)destroyMessage:(TMMessage *)message {
+    [self.channel.messages removeMessage:message completion:^(TMResultEnum result) {
+        if (result == TMResultSuccess) {
+            [self.tableView reloadData];
+        } else {
+            [DemoHelpers displayToastWithMessage:@"Failed to remove message." inView:self.view];
         }
     }];
 }
@@ -400,6 +499,17 @@
     });
 }
 
+- (void)removeMessages:(NSArray<TMMessage *> *)messages {
+    [self.messages removeObjectsInArray:messages];
+    [self sortMessages];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.tableView reloadData];
+        if (self.messages.count > 0) {
+            [self scrollToBottomMessage];
+        }
+    });
+}
+
 - (void)scrollToBottomMessage {
     if (self.messages.count == 0) {
         return;
@@ -415,6 +525,10 @@
 - (void)sortMessages {
     [self.messages sortUsingDescriptors:@[[[NSSortDescriptor alloc] initWithKey:@"timestamp"
                                                                       ascending:YES]]];
+}
+
+- (TMMessage *)messageForIndexPath:(nonnull NSIndexPath *)indexPath {
+    return self.messages[indexPath.row];
 }
 
 #pragma mark - TMChannelDelegate
@@ -435,6 +549,13 @@
         if (channel == self.channel) {
             [self performSegueWithIdentifier:@"returnToChannels" sender:nil];
         }
+    });
+}
+
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+     channelHistoryLoaded:(TMChannel *)channel {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.tableView reloadData];
     });
 }
 
@@ -462,6 +583,18 @@
                   channel:(TMChannel *)channel
              messageAdded:(TMMessage *)message {
     [self addMessages:@[message]];
+}
+
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+                  channel:(TMChannel *)channel
+           messageDeleted:(TMMessage *)message {
+    [self removeMessages:@[message]];
+}
+
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+                  channel:(TMChannel *)channel
+           messageChanged:(TMMessage *)message {
+    [self.tableView reloadData];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
