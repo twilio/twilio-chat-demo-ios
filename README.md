@@ -14,9 +14,9 @@ What you'll minimally need to get started:
 
 The first step is to bring the .framework into the project.  The easiest way to do this is to find the .framework in the tar.bz distribution and drag-n-drop it into the project navigator, next to the existing libc++.dylib reference is a good spot.
 
-Next, in the ChannelListViewController.m file, find the line that Xcode will let you know is an error.  Delete that #error line and fill in a client token in the line below:
+Next, in the IPMessagingManager.m file, find the line that Xcode will let you know is an error.  Delete that #error line and fill in a client token in the line below:
 
-        NSString *token = @"";
+        return nil;
 
 You can either paste in a client token you have generated elsewhere or update this portion of code to call out to a webservice you control that can generate tokens.
 
