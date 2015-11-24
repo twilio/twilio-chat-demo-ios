@@ -9,5 +9,5 @@
 #import <TwilioIPMessagingClient/TwilioIPMessagingClient.h>
 
 @interface ChannelViewController : UIViewController
-@property (nonatomic, strong) TMChannel *channel;
+@property (nonatomic, strong) TWMChannel *channel;
 @end

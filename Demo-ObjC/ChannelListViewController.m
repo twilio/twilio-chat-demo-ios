@@ -15,7 +15,7 @@
 @property (nonatomic, weak) IBOutlet UITableView *tableView;
 
 @property (nonatomic, strong) UIRefreshControl *refreshControl;
-@property (nonatomic, strong) TMChannels *channelsList;
+@property (nonatomic, strong) TWMChannels *channelsList;
 @property (nonatomic, strong) NSMutableOrderedSet *channels;
 @end
 
@@ -105,15 +105,15 @@
                                  ^(UIAlertAction *action) {
                                      UITextField *newChannelNameTextField = newChannelDialog.textFields[0];
                                      [self.channelsList createChannelWithFriendlyName:newChannelNameTextField.text
-                                                                                 type:isPrivate ? TMChannelTypePrivate : TMChannelTypePublic
-                                                                           completion:^(TMResultEnum result, TMChannel *channel) {
-                                                                               if (result == TMResultSuccess) {
+                                                                                 type:isPrivate ? TWMChannelTypePrivate : TWMChannelTypePublic
+                                                                           completion:^(TWMResult result, TWMChannel *channel) {
+                                                                               if (result == TWMResultSuccess) {
                                                                                    [DemoHelpers displayToastWithMessage:@"Channel Created"
                                                                                                                  inView:self.view];
-                                                                                   [channel joinWithCompletion:^(TMResultEnum result) {
+                                                                                   [channel joinWithCompletion:^(TWMResult result) {
                                                                                        [channel setAttributes:@{@"topic": @""
                                                                                                                 }
-                                                                                                   completion:^(TMResultEnum result) {
+                                                                                                   completion:^(TWMResult result) {
 
                                                                                                    }];
                                                                                    }];
@@ -133,7 +133,7 @@
                      completion:nil];
 }
 
-- (void)displayOperationsForChannel:(TMChannel *)channel
+- (void)displayOperationsForChannel:(TWMChannel *)channel
                         calledFromSwipe:(BOOL)calledFromSwipe {
     __weak __typeof(self) weakSelf = self;
     
@@ -141,7 +141,7 @@
                                                                             message:nil
                                                                      preferredStyle:UIAlertControllerStyleActionSheet];
 
-    if (channel.status == TMChannelStatusJoined) {
+    if (channel.status == TWMChannelStatusJoined) {
         [channelActions addAction:[UIAlertAction actionWithTitle:@"Leave"
                                                            style:UIAlertActionStyleDefault
                                                          handler:^(UIAlertAction *action) {
@@ -149,7 +149,7 @@
                                                          }]];
     }
     
-    if (channel.status == TMChannelStatusInvited) {
+    if (channel.status == TWMChannelStatusInvited) {
         [channelActions addAction:[UIAlertAction actionWithTitle:@"Decline Invite"
                                                            style:UIAlertActionStyleDefault
                                                          handler:^(UIAlertAction *action) {
@@ -157,7 +157,7 @@
                                                          }]];
     }
     
-    if (channel.status == TMChannelStatusInvited || channel.status == TMChannelStatusNotParticipating) {
+    if (channel.status == TWMChannelStatusInvited || channel.status == TWMChannelStatusNotParticipating) {
         [channelActions addAction:[UIAlertAction actionWithTitle:@"Join"
                                                            style:UIAlertActionStyleDefault
                                                          handler:^(UIAlertAction *action) {
@@ -196,13 +196,13 @@
     [self.tableView reloadData];
     
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        [[[IPMessagingManager sharedManager] client] channelsListWithCompletion:^(TMResultEnum result, TMChannels *channelsList) {
-            if (result == TMResultSuccess) {
+        [[[IPMessagingManager sharedManager] client] channelsListWithCompletion:^(TWMResult result, TWMChannels *channelsList) {
+            if (result == TWMResultSuccess) {
                 self.channelsList = channelsList;
                 
                 dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-                    [self.channelsList loadChannelsWithCompletion:^(TMResultEnum result) {
-                        if (result == TMResultSuccess) {
+                    [self.channelsList loadChannelsWithCompletion:^(TWMResult result) {
+                        if (result == TWMResultSuccess) {
                             self.channels = [[NSMutableOrderedSet alloc] init];
                             [self.channels addObjectsFromArray:[self.channelsList allObjects]];
                             [self sortChannels];
@@ -231,32 +231,32 @@
     });
 }
 
-- (void)leaveChannel:(TMChannel *)channel {
-    [channel leaveWithCompletion:^(TMResultEnum result) {
+- (void)leaveChannel:(TWMChannel *)channel {
+    [channel leaveWithCompletion:^(TWMResult result) {
         [DemoHelpers displayToastWithMessage:@"Channel Left"
                                       inView:self.view];
         [self.tableView reloadData];
     }];
 }
 
-- (void)destroyChannel:(TMChannel *)channel {
-    [channel destroyWithCompletion:^(TMResultEnum result) {
+- (void)destroyChannel:(TWMChannel *)channel {
+    [channel destroyWithCompletion:^(TWMResult result) {
         [DemoHelpers displayToastWithMessage:@"Channel Destroyed"
                                       inView:self.view];
         [self.tableView reloadData];
     }];
 }
 
-- (void)joinChannel:(TMChannel *)channel {
-    [channel joinWithCompletion:^(TMResultEnum result) {
+- (void)joinChannel:(TWMChannel *)channel {
+    [channel joinWithCompletion:^(TWMResult result) {
         [DemoHelpers displayToastWithMessage:@"Channel Joined"
                                       inView:self.view];
         [self.tableView reloadData];
     }];
 }
 
-- (void)declineInviteOnChannel:(TMChannel *)channel {
-    [channel declineInvitationWithCompletion:^(TMResultEnum result) {
+- (void)declineInviteOnChannel:(TWMChannel *)channel {
+    [channel declineInvitationWithCompletion:^(TWMResult result) {
         [DemoHelpers displayToastWithMessage:@"Invite Declined"
                                       inView:self.view];
         [self.tableView reloadData];
@@ -281,13 +281,13 @@
     } else {
         ChannelTableViewCell *channelCell = [tableView dequeueReusableCellWithIdentifier:@"channel"];
         
-        TMChannel *channel = self.channels[indexPath.row];
+        TWMChannel *channel = self.channels[indexPath.row];
 
         NSString *nameLabel = channel.friendlyName;
         if (channel.friendlyName.length == 0) {
             nameLabel = @"(no friendly name)";
         }
-        if (channel.type == TMChannelTypePrivate) {
+        if (channel.type == TWMChannelTypePrivate) {
             nameLabel = [nameLabel stringByAppendingString:@" (private)"];
         }
         
@@ -296,13 +296,13 @@
 
         UIColor *channelColor = nil;
         switch (channel.status) {
-            case TMChannelStatusInvited:
+            case TWMChannelStatusInvited:
                 channelColor = [UIColor blueColor];
                 break;
-            case TMChannelStatusJoined:
+            case TWMChannelStatusJoined:
                 channelColor = [UIColor greenColor];
                 break;
-            case TMChannelStatusNotParticipating:
+            case TWMChannelStatusNotParticipating:
                 channelColor = [UIColor grayColor];
                 break;
         }
@@ -319,7 +319,7 @@
 
 #pragma mark - UITableViewDelegate methods
 
-- (TMChannel *)channelForIndexPath:(NSIndexPath *)indexPath {
+- (TWMChannel *)channelForIndexPath:(NSIndexPath *)indexPath {
     if (!self.channels || indexPath.row >= self.channels.count) {
         return nil;
     }
@@ -335,9 +335,9 @@
         return;
     }
     
-    TMChannel *channel = [self channelForIndexPath:indexPath];
+    TWMChannel *channel = [self channelForIndexPath:indexPath];
     
-    if (channel.status == TMChannelStatusJoined) {
+    if (channel.status == TWMChannelStatusJoined) {
         [self performSegueWithIdentifier:@"viewChannel" sender:channel];
     } else {
         [self displayOperationsForChannel:channel
@@ -347,7 +347,7 @@
 
 - (NSArray *)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(NSIndexPath *)indexPath {
     NSMutableArray *actions = [NSMutableArray array];
-    TMChannel *channel = [self channelForIndexPath:indexPath];
+    TWMChannel *channel = [self channelForIndexPath:indexPath];
 
     __weak __typeof(self) weakSelf = self;
     [actions addObject:[UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive
@@ -372,7 +372,7 @@
 commitEditingStyle:(UITableViewCellEditingStyle)editingStyle
 forRowAtIndexPath:(NSIndexPath *)indexPath {
     if (editingStyle == UITableViewCellEditingStyleDelete) {
-        TMChannel *channel = [self channelForIndexPath:indexPath];
+        TWMChannel *channel = [self channelForIndexPath:indexPath];
         [self destroyChannel:channel];
     }
 }
@@ -387,7 +387,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 
 #pragma mark - TwilioIPMessagingClientDelegate
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelAdded:(TMChannel *)channel {
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelAdded:(TWMChannel *)channel {
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.channels addObject:channel];
         [self sortChannels];
@@ -395,28 +395,28 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     });
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelChanged:(TMChannel *)channel {
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelChanged:(TWMChannel *)channel {
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.tableView reloadData];
     });
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelDeleted:(TMChannel *)channel {
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelDeleted:(TWMChannel *)channel {
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.channels removeObject:channel];
         [self.tableView reloadData];
     });
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client errorReceived:(TMError *)error {
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client errorReceived:(TWMError *)error {
     [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"Error received: %@", error] inView:self.view];
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client toastReceivedOnChannel:(TMChannel *)channel message:(TMMessage *)message {
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client toastReceivedOnChannel:(TWMChannel *)channel message:(TWMMessage *)message {
     [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"New message on channel '%@'.", channel.friendlyName] inView:self.view];
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client toastRegistrationFailedWithError:(TMError *)error {
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client toastRegistrationFailedWithError:(TWMError *)error {
     // you can bring failures in registration for pushes to user's attention here
 }
 
