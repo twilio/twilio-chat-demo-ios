@@ -554,6 +554,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
      channelHistoryLoaded:(TWMChannel *)channel {
+    [self loadMessages];
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.tableView reloadData];
     });
