@@ -65,8 +65,10 @@
 }
 
 - (void)accessManagerTokenExpired:(TwilioAccessManager *)accessManager {
-    NSString *newToken = [self tokenForIdentity:accessManager.identity];
-    [accessManager updateToken:newToken];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSString *newToken = [self tokenForIdentity:accessManager.identity];
+        [accessManager updateToken:newToken];
+    });
 }
 
 - (void)accessManager:(TwilioAccessManager *)accessManager error:(NSError *)error {
@@ -77,6 +79,7 @@
     [self storeIdentity:nil];
     [self.client shutdown];
     self.client = nil;
+    self.accessManager = nil;
 }
 
 - (void)updatePushToken:(NSData *)token {
