@@ -104,24 +104,34 @@
                                                        handler:
                                  ^(UIAlertAction *action) {
                                      UITextField *newChannelNameTextField = newChannelDialog.textFields[0];
-                                     [self.channelsList createChannelWithFriendlyName:newChannelNameTextField.text
-                                                                                 type:isPrivate ? TWMChannelTypePrivate : TWMChannelTypePublic
-                                                                           completion:^(TWMResult result, TWMChannel *channel) {
-                                                                               if (result == TWMResultSuccess) {
-                                                                                   [DemoHelpers displayToastWithMessage:@"Channel Created"
-                                                                                                                 inView:self.view];
-                                                                                   [channel joinWithCompletion:^(TWMResult result) {
-                                                                                       [channel setAttributes:@{@"topic": @""
-                                                                                                                }
-                                                                                                   completion:^(TWMResult result) {
 
-                                                                                                   }];
-                                                                                   }];
-                                                                               } else {
-                                                                                   [DemoHelpers displayToastWithMessage:@"Channel Create Failed"
-                                                                                                                 inView:self.view];
-                                                                               }
-                                                                           }];
+                                     NSMutableDictionary *options = [NSMutableDictionary dictionary];
+                                     if (newChannelNameTextField &&
+                                         newChannelNameTextField.text &&
+                                         ![newChannelNameTextField.text isEqualToString:@""]) {
+                                         options[TWMChannelOptionFriendlyName] = newChannelNameTextField.text;
+                                     }
+                                     if (isPrivate) {
+                                         options[TWMChannelOptionType] = @(TWMChannelTypePrivate);
+                                     }
+                                     
+                                     [self.channelsList createChannelWithOptions:options
+                                                                      completion:^(TWMResult result, TWMChannel *channel) {
+                                                                          if (result == TWMResultSuccess) {
+                                                                              [DemoHelpers displayToastWithMessage:@"Channel Created"
+                                                                                                            inView:self.view];
+                                                                              [channel joinWithCompletion:^(TWMResult result) {
+                                                                                  [channel setAttributes:@{@"topic": @""
+                                                                                                           }
+                                                                                              completion:^(TWMResult result) {
+                                                                                                  
+                                                                                              }];
+                                                                              }];
+                                                                          } else {
+                                                                              [DemoHelpers displayToastWithMessage:@"Channel Create Failed"
+                                                                                                            inView:self.view];
+                                                                          }
+                                                                      }];
                                  }]];
     
     [newChannelDialog addAction:[UIAlertAction actionWithTitle:@"Cancel"
@@ -197,13 +207,13 @@
     
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         [[[IPMessagingManager sharedManager] client] channelsListWithCompletion:^(TWMResult result, TWMChannels *channelsList) {
+            self.channels = [[NSMutableOrderedSet alloc] init];
             if (result == TWMResultSuccess) {
                 self.channelsList = channelsList;
                 
                 dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
                     [self.channelsList loadChannelsWithCompletion:^(TWMResult result) {
                         if (result == TWMResultSuccess) {
-                            self.channels = [[NSMutableOrderedSet alloc] init];
                             [self.channels addObjectsFromArray:[self.channelsList allObjects]];
                             [self sortChannels];
                             
