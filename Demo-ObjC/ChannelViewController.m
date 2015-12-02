@@ -119,12 +119,15 @@
                                                        [weakSelf listMembers];
                                                    }]];
 
-    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Invite Member"
-                                                     style:UIAlertActionStyleDefault
-                                                   handler:^(UIAlertAction *action) {
-                                                       [weakSelf inviteMember];
-                                                   }]];
-    
+    if (self.channel.type == TWMChannelTypePrivate) {
+        // Invite is only valid for private channels
+        [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Invite Member"
+                                                         style:UIAlertActionStyleDefault
+                                                       handler:^(UIAlertAction *action) {
+                                                           [weakSelf inviteMember];
+                                                       }]];
+
+    }
     
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Leave"
                                                      style:UIAlertActionStyleDefault
