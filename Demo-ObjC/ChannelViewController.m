@@ -10,7 +10,7 @@
 #import "MemberTypingTableViewCell.h"
 #import "DemoHelpers.h"
 
-@interface ChannelViewController () <UITableViewDataSource, UITableViewDelegate, TMChannelDelegate, UITextFieldDelegate>
+@interface ChannelViewController () <UITableViewDataSource, UITableViewDelegate, TWMChannelDelegate, UITextFieldDelegate>
 @property (nonatomic, weak) IBOutlet UITableView *tableView;
 @property (nonatomic, strong) NSMutableOrderedSet *messages;
 @property (weak, nonatomic) IBOutlet UITextField *messageInput;
@@ -84,7 +84,7 @@
     }
 }
 
-- (void)setChannel:(TMChannel *)channel {
+- (void)setChannel:(TWMChannel *)channel {
     _channel = channel;
     self.channel.delegate = self;
 
@@ -119,12 +119,15 @@
                                                        [weakSelf listMembers];
                                                    }]];
 
-    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Invite Member"
-                                                     style:UIAlertActionStyleDefault
-                                                   handler:^(UIAlertAction *action) {
-                                                       [weakSelf inviteMember];
-                                                   }]];
-    
+    if (self.channel.type == TWMChannelTypePrivate) {
+        // Invite is only valid for private channels
+        [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Invite Member"
+                                                         style:UIAlertActionStyleDefault
+                                                       handler:^(UIAlertAction *action) {
+                                                           [weakSelf inviteMember];
+                                                       }]];
+
+    }
     
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Leave"
                                                      style:UIAlertActionStyleDefault
@@ -157,7 +160,7 @@
     NSMutableString *ret = [NSMutableString string];
 
     for (int ndx=0; ndx < typingUsers.count; ndx++) {
-        TMMember *member = (TMMember *)typingUsers[ndx];
+        TWMMember *member = (TWMMember *)typingUsers[ndx];
         if (ndx > 0 && ndx < typingUsers.count - 1) {
             [ret appendString:@", "];
         } else if (ndx > 0 && ndx == typingUsers.count - 1) {
@@ -182,7 +185,7 @@
         cell = typingCell;
     } else {
         MessageTableViewCell *messageCell = [tableView dequeueReusableCellWithIdentifier:@"message"];
-        TMMessage *message = self.messages[indexPath.row];
+        TWMMessage *message = self.messages[indexPath.row];
         
         messageCell.authorLabel.text = message.author;
         messageCell.dateLabel.text = message.timestamp;
@@ -202,7 +205,7 @@
 }
 - (NSArray *)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(NSIndexPath *)indexPath {
     NSMutableArray *actions = [NSMutableArray array];
-    TMMessage *message = [self messageForIndexPath:indexPath];
+    TWMMessage *message = [self messageForIndexPath:indexPath];
     
     __weak __typeof(self) weakSelf = self;
     [actions addObject:[UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive
@@ -225,7 +228,7 @@
 commitEditingStyle:(UITableViewCellEditingStyle)editingStyle
 forRowAtIndexPath:(NSIndexPath *)indexPath {
     if (editingStyle == UITableViewCellEditingStyleDelete) {
-        TMMessage *message = [self messageForIndexPath:indexPath];
+        TWMMessage *message = [self messageForIndexPath:indexPath];
         [self destroyMessage:message];
     }
 }
@@ -241,11 +244,11 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     if (textField.text.length == 0) {
         [self.view endEditing:YES];
     } else {
-        TMMessage *message = [self.channel.messages createMessageWithBody:textField.text];
+        TWMMessage *message = [self.channel.messages createMessageWithBody:textField.text];
         textField.text = @"";
         [self.channel.messages sendMessage:message
-                                completion:^(TMResultEnum result) {
-                                    if (result == TMResultFailure) {
+                                completion:^(TWMResult result) {
+                                    if (result == TWMResultFailure) {
                                         [DemoHelpers displayToastWithMessage:@"Failed to send message." inView:self.view];
                                     }
                                 }];
@@ -268,8 +271,8 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
         }
 
         [self.channel setFriendlyName:newValue
-                           completion:^(TMResultEnum result) {
-                               if (result == TMResultSuccess) {
+                           completion:^(TWMResult result) {
+                               if (result == TWMResultSuccess) {
                                    [DemoHelpers displayToastWithMessage:@"Friendly name changed."
                                                                  inView:weakSelf.view];
                                } else {
@@ -300,8 +303,8 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
         }
         attributes[@"topic"] = newValue;
         [self.channel setAttributes:attributes
-                         completion:^(TMResultEnum result) {
-                             if (result == TMResultSuccess) {
+                         completion:^(TWMResult result) {
+                             if (result == TWMResultSuccess) {
                                  [DemoHelpers displayToastWithMessage:@"Topic changed."
                                                                inView:weakSelf.view];
                              } else {
@@ -327,8 +330,8 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     __weak __typeof(self) weakSelf = self;
     void (^action)(NSString *) = ^void(NSString *newValue) {
         [self.channel setUniqueName:newValue
-                         completion:^(TMResultEnum result) {
-                             if (result == TMResultSuccess) {
+                         completion:^(TWMResult result) {
+                             if (result == TWMResultSuccess) {
                                  [DemoHelpers displayToastWithMessage:@"Unique Name changed."
                                                                inView:weakSelf.view];
                              } else {
@@ -345,7 +348,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
                        action:action];
 }
 
-- (void)changeMessage:(TMMessage *)message {
+- (void)changeMessage:(TWMMessage *)message {
     NSString *title = @"Message";
     NSString *placeholder = @"Message";
     NSString *initialValue = [message body];
@@ -354,8 +357,8 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     __weak __typeof(self) weakSelf = self;
     void (^action)(NSString *) = ^void(NSString *newValue) {
         [message updateBody:newValue
-                 completion:^(TMResultEnum result) {
-                     if (result == TMResultSuccess) {
+                 completion:^(TWMResult result) {
+                     if (result == TWMResultSuccess) {
                          [DemoHelpers displayToastWithMessage:@"Body changed."
                                                        inView:weakSelf.view];
                      } else {
@@ -385,8 +388,8 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
         }
         
         [self.channel.members inviteByIdentity:newValue
-                                    completion:^(TMResultEnum result) {
-                                        if (result == TMResultSuccess) {
+                                    completion:^(TWMResult result) {
+                                        if (result == TWMResultSuccess) {
                                             [DemoHelpers displayToastWithMessage:@"User invited."
                                                                           inView:weakSelf.view];
                                         } else {
@@ -404,19 +407,19 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (void)listMembers {
-    NSArray *members = [self.channel.members.allObjects sortedArrayUsingComparator:^NSComparisonResult(TMMember *obj1, TMMember *obj2) {
+    NSArray *members = [self.channel.members.allObjects sortedArrayUsingComparator:^NSComparisonResult(TWMMember *obj1, TWMMember *obj2) {
         return [obj1.identity compare:obj2.identity options:NSCaseInsensitiveSearch];
     }];
     NSMutableString *membersList = [NSMutableString string];
-    [members enumerateObjectsUsingBlock:^(TMMember *member, NSUInteger idx, BOOL *stop) {
+    [members enumerateObjectsUsingBlock:^(TWMMember *member, NSUInteger idx, BOOL *stop) {
         [membersList appendFormat:@"%@%@", membersList.length>0?@", ":@"", member.identity];
     }];
     [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"Members:\n%@", membersList] inView:self.view];
 }
 
 - (void)leaveChannel {
-    [self.channel leaveWithCompletion:^(TMResultEnum result) {
-        if (result == TMResultSuccess) {
+    [self.channel leaveWithCompletion:^(TWMResult result) {
+        if (result == TWMResultSuccess) {
             [self performSegueWithIdentifier:@"returnToChannels" sender:nil];
         } else {
             [DemoHelpers displayToastWithMessage:@"Failed to leave channel." inView:self.view];
@@ -424,9 +427,9 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     }];
 }
 
-- (void)destroyMessage:(TMMessage *)message {
-    [self.channel.messages removeMessage:message completion:^(TMResultEnum result) {
-        if (result == TMResultSuccess) {
+- (void)destroyMessage:(TWMMessage *)message {
+    [self.channel.messages removeMessage:message completion:^(TWMResult result) {
+        if (result == TWMResultSuccess) {
             [self.tableView reloadData];
         } else {
             [DemoHelpers displayToastWithMessage:@"Failed to remove message." inView:self.view];
@@ -488,7 +491,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     [self addMessages:self.channel.messages.allObjects];
 }
 
-- (void)addMessages:(NSArray<TMMessage *> *)messages {
+- (void)addMessages:(NSArray<TWMMessage *> *)messages {
     [self.messages addObjectsFromArray:messages];
     [self sortMessages];
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -499,7 +502,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     });
 }
 
-- (void)removeMessages:(NSArray<TMMessage *> *)messages {
+- (void)removeMessages:(NSArray<TWMMessage *> *)messages {
     [self.messages removeObjectsInArray:messages];
     [self sortMessages];
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -527,14 +530,14 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
                                                                       ascending:YES]]];
 }
 
-- (TMMessage *)messageForIndexPath:(nonnull NSIndexPath *)indexPath {
+- (TWMMessage *)messageForIndexPath:(nonnull NSIndexPath *)indexPath {
     return self.messages[indexPath.row];
 }
 
 #pragma mark - TMChannelDelegate
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-           channelChanged:(TMChannel *)channel {
+           channelChanged:(TWMChannel *)channel {
     [DemoHelpers displayToastWithMessage:@"Channel attributes changed."
                                   inView:self.view];
     
@@ -544,7 +547,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-           channelDeleted:(TMChannel *)channel {
+           channelDeleted:(TWMChannel *)channel {
     dispatch_async(dispatch_get_main_queue(), ^{
         if (channel == self.channel) {
             [self performSegueWithIdentifier:@"returnToChannels" sender:nil];
@@ -553,61 +556,62 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-     channelHistoryLoaded:(TMChannel *)channel {
+     channelHistoryLoaded:(TWMChannel *)channel {
+    [self loadMessages];
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.tableView reloadData];
     });
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-                  channel:(TMChannel *)channel
-             memberJoined:(TMMember *)member {
+                  channel:(TWMChannel *)channel
+             memberJoined:(TWMMember *)member {
     [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ joined the channel.", member.identity]
                                   inView:self.view];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-                  channel:(TMChannel *)channel
-            memberChanged:(TMMember *)member {
+                  channel:(TWMChannel *)channel
+            memberChanged:(TWMMember *)member {
 
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-                  channel:(TMChannel *)channel
-               memberLeft:(TMMember *)member {
+                  channel:(TWMChannel *)channel
+               memberLeft:(TWMMember *)member {
     [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ left the channel.", member.identity]
                                   inView:self.view];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-                  channel:(TMChannel *)channel
-             messageAdded:(TMMessage *)message {
+                  channel:(TWMChannel *)channel
+             messageAdded:(TWMMessage *)message {
     [self addMessages:@[message]];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-                  channel:(TMChannel *)channel
-           messageDeleted:(TMMessage *)message {
+                  channel:(TWMChannel *)channel
+           messageDeleted:(TWMMessage *)message {
     [self removeMessages:@[message]];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-                  channel:(TMChannel *)channel
-           messageChanged:(TMMessage *)message {
+                  channel:(TWMChannel *)channel
+           messageChanged:(TWMMessage *)message {
     [self.tableView reloadData];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-   typingStartedOnChannel:(TMChannel *)channel
-                   member:(TMMember *)member {
+   typingStartedOnChannel:(TWMChannel *)channel
+                   member:(TWMMember *)member {
     [self.typingUsers addObject:member];
     [self.tableView reloadData];
     [self scrollToBottomMessage];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-     typingEndedOnChannel:(TMChannel *)channel
-                   member:(TMMember *)member {
+     typingEndedOnChannel:(TWMChannel *)channel
+                   member:(TWMMember *)member {
     [self.typingUsers removeObject:member];
     [self.tableView reloadData];
     [self scrollToBottomMessage];
