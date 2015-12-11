@@ -120,13 +120,6 @@
                                                                           if (result == TWMResultSuccess) {
                                                                               [DemoHelpers displayToastWithMessage:@"Channel Created"
                                                                                                             inView:self.view];
-                                                                              [channel joinWithCompletion:^(TWMResult result) {
-                                                                                  [channel setAttributes:@{@"topic": @""
-                                                                                                           }
-                                                                                              completion:^(TWMResult result) {
-                                                                                                  
-                                                                                              }];
-                                                                              }];
                                                                           } else {
                                                                               [DemoHelpers displayToastWithMessage:@"Channel Create Failed"
                                                                                                             inView:self.view];
