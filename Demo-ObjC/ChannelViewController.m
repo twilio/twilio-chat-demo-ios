@@ -126,9 +126,14 @@
                                                        handler:^(UIAlertAction *action) {
                                                            [weakSelf inviteMember];
                                                        }]];
-
     }
-    
+
+    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Add Member"
+                                                     style:UIAlertActionStyleDefault
+                                                   handler:^(UIAlertAction *action) {
+                                                       [weakSelf addMember];
+                                                   }]];
+
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Leave"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
@@ -397,6 +402,37 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
                                                                           inView:weakSelf.view];
                                         }
                                     }];
+    };
+    
+    [self promptUserWithTitle:title
+                  placeholder:placeholder
+                 initialValue:initialValue
+                  actionTitle:actionTitle
+                       action:action];
+}
+
+- (void)addMember {
+    NSString *title = @"Add";
+    NSString *placeholder = @"User To Add";
+    NSString *initialValue = @"";
+    NSString *actionTitle = @"Add";
+    
+    __weak __typeof(self) weakSelf = self;
+    void (^action)(NSString *) = ^void(NSString *newValue) {
+        if (!newValue || newValue.length == 0) {
+            return;
+        }
+        
+        [self.channel.members addByIdentity:newValue
+                                 completion:^(TWMResult result) {
+                                     if (result == TWMResultSuccess) {
+                                         [DemoHelpers displayToastWithMessage:@"User added."
+                                                                       inView:weakSelf.view];
+                                     } else {
+                                         [DemoHelpers displayToastWithMessage:@"User could not be added."
+                                                                       inView:weakSelf.view];
+                                     }
+                                 }];
     };
     
     [self promptUserWithTitle:title
