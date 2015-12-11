@@ -530,23 +530,19 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 - (void)addMessages:(NSArray<TWMMessage *> *)messages {
     [self.messages addObjectsFromArray:messages];
     [self sortMessages];
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self.tableView reloadData];
-        if (self.messages.count > 0) {
-            [self scrollToBottomMessage];
-        }
-    });
+    [self.tableView reloadData];
+    if (self.messages.count > 0) {
+        [self scrollToBottomMessage];
+    }
 }
 
 - (void)removeMessages:(NSArray<TWMMessage *> *)messages {
     [self.messages removeObjectsInArray:messages];
     [self sortMessages];
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self.tableView reloadData];
-        if (self.messages.count > 0) {
-            [self scrollToBottomMessage];
-        }
-    });
+    [self.tableView reloadData];
+    if (self.messages.count > 0) {
+        [self scrollToBottomMessage];
+    }
 }
 
 - (void)scrollToBottomMessage {
@@ -577,26 +573,20 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     [DemoHelpers displayToastWithMessage:@"Channel attributes changed."
                                   inView:self.view];
     
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self.tableView reloadData];
-    });
+    [self.tableView reloadData];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
            channelDeleted:(TWMChannel *)channel {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        if (channel == self.channel) {
-            [self performSegueWithIdentifier:@"returnToChannels" sender:nil];
-        }
-    });
+    if (channel == self.channel) {
+        [self performSegueWithIdentifier:@"returnToChannels" sender:nil];
+    }
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
      channelHistoryLoaded:(TWMChannel *)channel {
     [self loadMessages];
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self.tableView reloadData];
-    });
+    [self.tableView reloadData];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
