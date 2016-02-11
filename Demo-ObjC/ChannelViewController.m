@@ -2,7 +2,7 @@
 //  ChannelViewController.m
 //  Twilio IP Messaging Demo
 //
-//  Copyright (c) 2015 Twilio. All rights reserved.
+//  Copyright (c) 2011-2016 Twilio. All rights reserved.
 //
 
 #import "ChannelViewController.h"
