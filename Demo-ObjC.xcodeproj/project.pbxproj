@@ -15,11 +15,11 @@
 		58223ACB1B69571C00F0DF97 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 58223AC91B69571C00F0DF97 /* LaunchScreen.xib */; };
 		58223B4C1B6AA07600F0DF97 /* libc++.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 58223B4B1B6AA07600F0DF97 /* libc++.dylib */; };
 		583D81461B6FA82E00BF3C56 /* ChannelTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 583D81451B6FA82E00BF3C56 /* ChannelTableViewCell.m */; };
-		58652D051BC5BBC800250FEA /* MemberTypingTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 58652D041BC5BBC800250FEA /* MemberTypingTableViewCell.m */; settings = {ASSET_TAGS = (); }; };
+		58652D051BC5BBC800250FEA /* MemberTypingTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 58652D041BC5BBC800250FEA /* MemberTypingTableViewCell.m */; };
 		58D509101B7B78D20093B5F1 /* ChannelViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 58D5090F1B7B78D20093B5F1 /* ChannelViewController.m */; };
 		58D509131B7B7AF00093B5F1 /* MessageTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 58D509121B7B7AF00093B5F1 /* MessageTableViewCell.m */; };
-		58F878431BCD75450097F014 /* LoginViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 58F878421BCD75450097F014 /* LoginViewController.m */; settings = {ASSET_TAGS = (); }; };
-		58F878461BCDA8930097F014 /* IPMessagingManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 58F878451BCDA8930097F014 /* IPMessagingManager.m */; settings = {ASSET_TAGS = (); }; };
+		58F878431BCD75450097F014 /* LoginViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 58F878421BCD75450097F014 /* LoginViewController.m */; };
+		58F878461BCDA8930097F014 /* IPMessagingManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 58F878451BCDA8930097F014 /* IPMessagingManager.m */; };
 		58FB4B201B8E5A8800DDF5B8 /* DemoHelpers.m in Sources */ = {isa = PBXBuildFile; fileRef = 58FB4B1F1B8E5A8800DDF5B8 /* DemoHelpers.m */; };
 /* End PBXBuildFile section */
 
