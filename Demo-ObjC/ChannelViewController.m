@@ -9,6 +9,7 @@
 #import "MessageTableViewCell.h"
 #import "MemberTypingTableViewCell.h"
 #import "DemoHelpers.h"
+#import "IPMessagingManager.h"
 
 @interface ChannelViewController () <UITableViewDataSource, UITableViewDelegate, TWMChannelDelegate, UITextFieldDelegate>
 @property (nonatomic, weak) IBOutlet UITableView *tableView;
@@ -16,6 +17,9 @@
 @property (weak, nonatomic) IBOutlet UITextField *messageInput;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *keyboardAdjustmentConstraint;
 @property (nonatomic, strong) NSMutableArray *typingUsers;
+
+@property (nonatomic, copy) NSNumber *userConsumedIndex;
+@property (nonatomic, strong) NSDictionary<NSNumber *, NSArray<TWMMember *> *> *seenBy;
 @end
 
 @implementation ChannelViewController
@@ -39,6 +43,46 @@
 - (void)sharedInit {
     self.messages = [[NSMutableOrderedSet alloc] init];
     self.typingUsers = [NSMutableArray array];
+}
+
+- (void)updateChannel {
+    NSNumber *lastConsumedMessageIndex = [self.channel.messages lastConsumedMessageIndex];
+    
+    if (lastConsumedMessageIndex && ![[[self.messages lastObject] index] isEqualToNumber:lastConsumedMessageIndex]) {
+        self.userConsumedIndex = lastConsumedMessageIndex;
+    }
+    [self refreshSeenBy];
+}
+
+- (void)refreshSeenBy {
+    NSMutableDictionary *seenBy = [NSMutableDictionary dictionary];
+    NSString *myIdentity = [[IPMessagingManager sharedManager] identity];
+    for (TWMMember *member in [self.channel.members allObjects]) {
+        if (![member.identity isEqualToString:myIdentity]) {
+            NSNumber *index = [member lastConsumedMessageIndex];
+            if (index) {
+                NSMutableArray *members = seenBy[index];
+                if (!members) {
+                    members = [NSMutableArray array];
+                    seenBy[index] = members;
+                }
+                if (![members containsObject:member]) {
+                    [members addObject:member];
+                }
+            }
+        }
+    }
+
+    self.seenBy = seenBy;
+    [self.tableView reloadData];
+}
+
+- (NSString *)seenByStringForIndex:(NSNumber *)index {
+    NSArray<TWMMember *> *seenBy = self.seenBy[index];
+    if (!seenBy) {
+        return @"";
+    }
+    return [self pluralizeListOfMembers:seenBy];
 }
 
 - (void)viewDidLoad {
@@ -75,6 +119,12 @@
     }
 }
 
+- (void)viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
+    
+    [self scrollToLastConsumedMessage];
+}
+
 - (void)viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
     if (self.channel) {
@@ -89,6 +139,7 @@
     self.channel.delegate = self;
 
     [self loadMessages];
+    [self updateChannel];
 }
 
 - (IBAction)performAction:(id)sender {
@@ -161,20 +212,32 @@
 
 - (NSString *)typingUsersString {
     NSArray *typingUsers = [self.typingUsers copy];
+    NSString *membersString = [self pluralizeListOfMembers:typingUsers];
     
-    NSMutableString *ret = [NSMutableString string];
+    return [NSString stringWithFormat:@"%@ %@ typing...", membersString, typingUsers.count > 1 ? @"are" : @"is"];
+}
 
-    for (int ndx=0; ndx < typingUsers.count; ndx++) {
-        TWMMember *member = (TWMMember *)typingUsers[ndx];
-        if (ndx > 0 && ndx < typingUsers.count - 1) {
+- (NSString *)pluralizeListOfMembers:(NSArray<TWMMember *> *)members {
+    if (!members || [members count] == 0) {
+        return @"";
+    }
+    NSArray *membersSorted = [members sortedArrayUsingComparator:^NSComparisonResult(TWMMember *obj1, TWMMember *obj2) {
+        return [obj1.identity compare:obj2.identity options:NSCaseInsensitiveSearch];
+    }];
+
+    NSMutableString *ret = [NSMutableString string];
+    
+    for (int ndx=0; ndx < membersSorted.count; ndx++) {
+        TWMMember *member = (TWMMember *)membersSorted[ndx];
+        if (ndx > 0 && ndx < membersSorted.count - 1) {
             [ret appendString:@", "];
-        } else if (ndx > 0 && ndx == typingUsers.count - 1) {
+        } else if (ndx > 0 && ndx == membersSorted.count - 1) {
             [ret appendString:@" and "];
         }
         [ret appendString:member.identity];
     }
-    
-    return [NSString stringWithFormat:@"%@ %@ typing...", ret, typingUsers.count > 1 ? @"are" : @"is"];
+
+    return ret;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -191,7 +254,14 @@
     } else {
         MessageTableViewCell *messageCell = [tableView dequeueReusableCellWithIdentifier:@"message"];
         TWMMessage *message = self.messages[indexPath.row];
+        [self.channel.messages advanceLastConsumedMessageIndex:message.index];
         
+        messageCell.seenByLabel.text = [self seenByStringForIndex:message.index];
+        if (self.userConsumedIndex && [self.userConsumedIndex isEqualToNumber:message.index]) {
+            messageCell.consumptionLabel.text = @"__________ NEW MESSAGES __________";
+        } else {
+            messageCell.consumptionLabel.text = @"";
+        }
         messageCell.authorLabel.text = message.author;
         messageCell.dateLabel.text = message.timestamp;
         messageCell.bodyLabel.text = message.body;
@@ -443,13 +513,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (void)listMembers {
-    NSArray *members = [self.channel.members.allObjects sortedArrayUsingComparator:^NSComparisonResult(TWMMember *obj1, TWMMember *obj2) {
-        return [obj1.identity compare:obj2.identity options:NSCaseInsensitiveSearch];
-    }];
-    NSMutableString *membersList = [NSMutableString string];
-    [members enumerateObjectsUsingBlock:^(TWMMember *member, NSUInteger idx, BOOL *stop) {
-        [membersList appendFormat:@"%@%@", membersList.length>0?@", ":@"", member.identity];
-    }];
+    NSString *membersList = [self pluralizeListOfMembers:self.channel.members.allObjects];
     [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"Members:\n%@", membersList] inView:self.view];
 }
 
@@ -531,29 +595,69 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     [self.messages addObjectsFromArray:messages];
     [self sortMessages];
     [self.tableView reloadData];
-    if (self.messages.count > 0) {
-        [self scrollToBottomMessage];
+    if ([self isNearBottom]) {
+        [self scrollToLastConsumedMessage];
     }
+}
+
+- (BOOL)isNearBottom {
+    [self.tableView visibleCells]; // work-around for indexPathsForVisibleRows not being implicitly up to date
+    NSArray<NSIndexPath *> *visiblePaths = self.tableView.indexPathsForVisibleRows;
+    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:(self.messages.count - 2) inSection:0];
+    BOOL nearBottom = [visiblePaths containsObject:indexPath];
+    return nearBottom;
 }
 
 - (void)removeMessages:(NSArray<TWMMessage *> *)messages {
     [self.messages removeObjectsInArray:messages];
     [self sortMessages];
     [self.tableView reloadData];
-    if (self.messages.count > 0) {
-        [self scrollToBottomMessage];
-    }
 }
 
-- (void)scrollToBottomMessage {
+- (void)scrollToLastConsumedMessage {
+    if (!self.tableView.dataSource) { // tableview is not yet initialized
+        return;
+    }
     if (self.messages.count == 0) {
         return;
     }
     
-    NSIndexPath *bottomMessageIndex = [NSIndexPath indexPathForRow:[self.tableView numberOfRowsInSection:0] - 1
+    NSNumber *lastConsumedMessage = [[[self channel] messages] lastConsumedMessageIndex];
+    NSUInteger targetIndex = 0;
+    if (!lastConsumedMessage) {
+        targetIndex = self.messages.count - 1;
+    } else {
+        TWMMessage *message = [[[self channel] messages] messageForConsumptionIndex:lastConsumedMessage];
+        targetIndex = [[self messages] indexOfObject:message];
+    }
+
+    [self scrollToIndex:targetIndex position:UITableViewScrollPositionTop];
+}
+
+- (void)scrollToBottomMessage {
+    NSInteger messagesCount = self.messages.count;
+    if (messagesCount == 0) {
+        return;
+    }
+    if (!self.tableView.dataSource) { // tableview is not yet initialized
+        return;
+    }
+    
+    [self scrollToIndex:messagesCount - 1 position:UITableViewScrollPositionBottom];
+}
+
+- (void)scrollToIndex:(NSUInteger)targetIndex position:(UITableViewScrollPosition)position {
+    if (!self.tableView.dataSource) { // tableview is not yet initialized
+        return;
+    }
+    if (self.messages.count == 0) {
+        return;
+    }
+    
+    NSIndexPath *bottomMessageIndex = [NSIndexPath indexPathForRow:(targetIndex)
                                                          inSection:0];
     [self.tableView scrollToRowAtIndexPath:bottomMessageIndex
-                          atScrollPosition:UITableViewScrollPositionBottom
+                          atScrollPosition:position
                                   animated:NO];
 }
 
@@ -570,9 +674,6 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
            channelChanged:(TWMChannel *)channel {
-    [DemoHelpers displayToastWithMessage:@"Channel attributes changed."
-                                  inView:self.view];
-    
     [self.tableView reloadData];
 }
 
@@ -599,7 +700,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
                   channel:(TWMChannel *)channel
             memberChanged:(TWMMember *)member {
-
+    [self refreshSeenBy];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
@@ -619,6 +720,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
                   channel:(TWMChannel *)channel
            messageDeleted:(TWMMessage *)message {
     [self removeMessages:@[message]];
+    [self refreshSeenBy];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
@@ -632,7 +734,9 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
                    member:(TWMMember *)member {
     [self.typingUsers addObject:member];
     [self.tableView reloadData];
-    [self scrollToBottomMessage];
+    if ([self isNearBottom]) {
+        [self scrollToBottomMessage];
+    }
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
@@ -640,7 +744,9 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
                    member:(TWMMember *)member {
     [self.typingUsers removeObject:member];
     [self.tableView reloadData];
-    [self scrollToBottomMessage];
+    if ([self isNearBottom]) {
+        [self scrollToBottomMessage];
+    }
 }
 
 @end
