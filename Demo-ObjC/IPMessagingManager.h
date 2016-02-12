@@ -23,4 +23,6 @@
 - (void)updatePushToken:(NSData *)token;
 - (void)receivedNotification:(NSDictionary *)notification;
 
+- (NSString *)identity;
+
 @end

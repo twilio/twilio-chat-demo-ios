@@ -92,6 +92,10 @@
     [self updateIpMessagingClient];
 }
 
+- (NSString *)identity {
+    return [self.client identity];
+}
+
 #pragma mark Push functionality
 
 - (void)setIpMessagingClient:(TwilioIPMessagingClient *)ipMessagingClient {
