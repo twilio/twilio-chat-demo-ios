@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		581B5C8B1C7FC8A800F16460 /* SeenByTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 581B5C8A1C7FC8A800F16460 /* SeenByTableViewCell.m */; };
 		58223ABD1B69571C00F0DF97 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 58223ABC1B69571C00F0DF97 /* main.m */; };
 		58223AC01B69571C00F0DF97 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 58223ABF1B69571C00F0DF97 /* AppDelegate.m */; };
 		58223AC31B69571C00F0DF97 /* ChannelListViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 58223AC21B69571C00F0DF97 /* ChannelListViewController.m */; };
@@ -24,6 +25,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		581B5C891C7FC8A800F16460 /* SeenByTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SeenByTableViewCell.h; sourceTree = "<group>"; };
+		581B5C8A1C7FC8A800F16460 /* SeenByTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SeenByTableViewCell.m; sourceTree = "<group>"; };
 		58223AB71B69571C00F0DF97 /* Demo-ObjC.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Demo-ObjC.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		58223ABB1B69571C00F0DF97 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		58223ABC1B69571C00F0DF97 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -97,6 +100,8 @@
 				58D509121B7B7AF00093B5F1 /* MessageTableViewCell.m */,
 				58652D031BC5BBC800250FEA /* MemberTypingTableViewCell.h */,
 				58652D041BC5BBC800250FEA /* MemberTypingTableViewCell.m */,
+				581B5C891C7FC8A800F16460 /* SeenByTableViewCell.h */,
+				581B5C8A1C7FC8A800F16460 /* SeenByTableViewCell.m */,
 				58223AC41B69571C00F0DF97 /* Main.storyboard */,
 				58223AC71B69571C00F0DF97 /* Images.xcassets */,
 				58223AC91B69571C00F0DF97 /* LaunchScreen.xib */,
@@ -189,6 +194,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				58FB4B201B8E5A8800DDF5B8 /* DemoHelpers.m in Sources */,
+				581B5C8B1C7FC8A800F16460 /* SeenByTableViewCell.m in Sources */,
 				58223AC31B69571C00F0DF97 /* ChannelListViewController.m in Sources */,
 				58D509101B7B78D20093B5F1 /* ChannelViewController.m in Sources */,
 				583D81461B6FA82E00BF3C56 /* ChannelTableViewCell.m in Sources */,

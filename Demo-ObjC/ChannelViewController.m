@@ -8,16 +8,25 @@
 #import "ChannelViewController.h"
 #import "MessageTableViewCell.h"
 #import "MemberTypingTableViewCell.h"
+#import "SeenByTableViewCell.h"
 #import "DemoHelpers.h"
 #import "IPMessagingManager.h"
 
+static NSString * const kChannelDataType = @"channelDataType";
+static NSString * const kChannelDataTypeMessage = @"message";
+static NSString * const kChannelDataTypeMemberConsumption = @"memberConsumption";
+static NSString * const kChannelDataTypeUserConsumption = @"userConsumption";
+static NSString * const kChannelDataTypeMembersTyping = @"membersTyping";
+static NSString * const kChannelDataData = @"channelDataData";
+
 @interface ChannelViewController () <UITableViewDataSource, UITableViewDelegate, TWMChannelDelegate, UITextFieldDelegate>
 @property (nonatomic, weak) IBOutlet UITableView *tableView;
-@property (nonatomic, strong) NSMutableOrderedSet *messages;
 @property (weak, nonatomic) IBOutlet UITextField *messageInput;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *keyboardAdjustmentConstraint;
-@property (nonatomic, strong) NSMutableArray *typingUsers;
 
+@property (nonatomic, strong) NSMutableOrderedSet *messages;
+@property (nonatomic, strong) NSMutableArray<id> *channelData;
+@property (nonatomic, strong) NSMutableArray *typingUsers;
 @property (nonatomic, copy) NSNumber *userConsumedIndex;
 @property (nonatomic, strong) NSDictionary<NSNumber *, NSArray<TWMMember *> *> *seenBy;
 @end
@@ -74,15 +83,7 @@
     }
 
     self.seenBy = seenBy;
-    [self.tableView reloadData];
-}
-
-- (NSString *)seenByStringForIndex:(NSNumber *)index {
-    NSArray<TWMMember *> *seenBy = self.seenBy[index];
-    if (!seenBy) {
-        return @"";
-    }
-    return [self pluralizeListOfMembers:seenBy];
+    [self rebuildData];
 }
 
 - (void)viewDidLoad {
@@ -92,6 +93,7 @@
     self.tableView.rowHeight = UITableViewAutomaticDimension;
     self.tableView.estimatedRowHeight = 88.0f;
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
+    self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -202,8 +204,13 @@
 
 #pragma mark - UITableViewDataSource
 
+- (BOOL)showNewest {
+    return (self.userConsumedIndex &&
+            [self.userConsumedIndex integerValue] < [[[[self messages] lastObject] index] integerValue]);
+}
+
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    NSInteger count = self.messages.count;
+    NSInteger count = [self channelData].count;
     if (self.typingUsers.count > 0) {
         count++;
     }
@@ -240,28 +247,86 @@
     return ret;
 }
 
+- (void)rebuildData {
+    NSMutableArray<id> *newData = [NSMutableArray arrayWithArray:[self.messages array]];
+    NSArray *consumptionKeys = [[[self seenBy] allKeys] sortedArrayUsingSelector:@selector(compare:)];
+
+    if (self.userConsumedIndex) {
+        TWMMessage *consumptionMessage = [[[self channel] messages] messageForConsumptionIndex:self.userConsumedIndex];
+        if (consumptionMessage) {
+            NSUInteger ndx = [newData indexOfObject:consumptionMessage];
+            if (ndx != (newData.count - 1)) {
+                [newData insertObject:@{
+                                        kChannelDataType: kChannelDataTypeUserConsumption
+                                        }
+                              atIndex:ndx+1];
+            }
+        }
+    }
+    
+    for (NSNumber *consumptionIndex in consumptionKeys) {
+        TWMMessage *consumptionMessage = [[[self channel] messages] messageForConsumptionIndex:consumptionIndex];
+        if (consumptionMessage) {
+            NSUInteger ndx = [newData indexOfObject:consumptionMessage];
+            [newData insertObject:@{
+                                    kChannelDataType: kChannelDataTypeMemberConsumption,
+                                    kChannelDataData: self.seenBy[consumptionIndex]
+                                    }
+                          atIndex:ndx+1];
+        }
+    }
+    
+    self.channelData = newData;
+    [self.tableView reloadData];
+}
+
+- (NSDictionary<NSString *, id> *)dataForRow:(NSUInteger)row {
+    NSDictionary<NSString *, id> *ret = nil;
+    
+    if (row == [self channelData].count) {
+        return @{
+                 kChannelDataType: kChannelDataTypeMembersTyping
+                 };
+    }
+    
+    id data = self.channelData[row];
+    if ([data isKindOfClass:[NSDictionary class]]) {
+        ret = data;
+    } else if ([data isKindOfClass:[TWMMessage class]]) {
+        ret = @{
+                kChannelDataType: kChannelDataTypeMessage,
+                kChannelDataData: data
+                };
+    }
+
+    return ret;
+}
+
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell = nil;
-    
-    if (self.typingUsers.count > 0 && indexPath.row == self.messages.count) {
+
+    NSDictionary<NSString *, id> *data = [self dataForRow:indexPath.row];
+    if ([data[kChannelDataType] isEqualToString:kChannelDataTypeMembersTyping]) {
         NSString *message = [self typingUsersString];
         MemberTypingTableViewCell *typingCell = [tableView dequeueReusableCellWithIdentifier:@"typing"];
-
+        
         typingCell.typingLabel.text = message;
         [typingCell layoutIfNeeded];
         
         cell = typingCell;
-    } else {
+    } else if ([data[kChannelDataType] isEqualToString:kChannelDataTypeUserConsumption]) {
+        UITableViewCell *newestCell = [tableView dequeueReusableCellWithIdentifier:@"newest"];
+
+        cell = newestCell;
+    } else if ([data[kChannelDataType] isEqualToString:kChannelDataTypeMemberConsumption]) {
+        SeenByTableViewCell *consumptionCell = [tableView dequeueReusableCellWithIdentifier:@"consumption"];
+        consumptionCell.seenByLabel.text = [NSString stringWithFormat:@"Seen by %@", [self pluralizeListOfMembers:data[kChannelDataData]]];
+
+        cell = consumptionCell;
+    } else if ([data[kChannelDataType] isEqualToString:kChannelDataTypeMessage]) {
         MessageTableViewCell *messageCell = [tableView dequeueReusableCellWithIdentifier:@"message"];
-        TWMMessage *message = self.messages[indexPath.row];
+        TWMMessage *message = data[kChannelDataData];
         [self.channel.messages advanceLastConsumedMessageIndex:message.index];
-        
-        messageCell.seenByLabel.text = [self seenByStringForIndex:message.index];
-        if (self.userConsumedIndex && [self.userConsumedIndex isEqualToNumber:message.index]) {
-            messageCell.consumptionLabel.text = @"__________ NEW MESSAGES __________";
-        } else {
-            messageCell.consumptionLabel.text = @"";
-        }
         messageCell.authorLabel.text = message.author;
         messageCell.dateLabel.text = message.timestamp;
         messageCell.bodyLabel.text = message.body;
@@ -269,7 +334,7 @@
         
         cell = messageCell;
     }
-    
+
     return cell;
 }
 
@@ -281,6 +346,10 @@
 - (NSArray *)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(NSIndexPath *)indexPath {
     NSMutableArray *actions = [NSMutableArray array];
     TWMMessage *message = [self messageForIndexPath:indexPath];
+    
+    if (!message) {
+        return @[];
+    }
     
     __weak __typeof(self) weakSelf = self;
     [actions addObject:[UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive
@@ -530,7 +599,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 - (void)destroyMessage:(TWMMessage *)message {
     [self.channel.messages removeMessage:message completion:^(TWMResult result) {
         if (result == TWMResultSuccess) {
-            [self.tableView reloadData];
+            [self rebuildData];
         } else {
             [DemoHelpers displayToastWithMessage:@"Failed to remove message." inView:self.view];
         }
@@ -594,7 +663,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 - (void)addMessages:(NSArray<TWMMessage *> *)messages {
     [self.messages addObjectsFromArray:messages];
     [self sortMessages];
-    [self.tableView reloadData];
+    [self rebuildData];
     if ([self isNearBottom]) {
         [self scrollToLastConsumedMessage];
     }
@@ -603,7 +672,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 - (BOOL)isNearBottom {
     [self.tableView visibleCells]; // work-around for indexPathsForVisibleRows not being implicitly up to date
     NSArray<NSIndexPath *> *visiblePaths = self.tableView.indexPathsForVisibleRows;
-    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:(self.messages.count - 2) inSection:0];
+    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:(self.channelData.count - 2) inSection:0];
     BOOL nearBottom = [visiblePaths containsObject:indexPath];
     return nearBottom;
 }
@@ -611,7 +680,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 - (void)removeMessages:(NSArray<TWMMessage *> *)messages {
     [self.messages removeObjectsInArray:messages];
     [self sortMessages];
-    [self.tableView reloadData];
+    [self rebuildData];
 }
 
 - (void)scrollToLastConsumedMessage {
@@ -625,17 +694,17 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     NSNumber *lastConsumedMessage = [[[self channel] messages] lastConsumedMessageIndex];
     NSUInteger targetIndex = 0;
     if (!lastConsumedMessage) {
-        targetIndex = self.messages.count - 1;
+        targetIndex = self.channelData.count - 1;
     } else {
         TWMMessage *message = [[[self channel] messages] messageForConsumptionIndex:lastConsumedMessage];
-        targetIndex = [[self messages] indexOfObject:message];
+        targetIndex = [[self channelData] indexOfObject:message];
     }
 
     [self scrollToIndex:targetIndex position:UITableViewScrollPositionTop];
 }
 
 - (void)scrollToBottomMessage {
-    NSInteger messagesCount = self.messages.count;
+    NSInteger messagesCount = [self channelData].count;
     if (messagesCount == 0) {
         return;
     }
@@ -650,7 +719,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     if (!self.tableView.dataSource) { // tableview is not yet initialized
         return;
     }
-    if (self.messages.count == 0) {
+    if ([self channelData].count == 0) {
         return;
     }
     
@@ -667,14 +736,18 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (TWMMessage *)messageForIndexPath:(nonnull NSIndexPath *)indexPath {
-    return self.messages[indexPath.row];
+    NSDictionary *data = [self dataForRow:indexPath.row];
+    if ([data[kChannelDataType] isEqualToString:kChannelDataTypeMessage]) {
+        return data[kChannelDataData];
+    }
+    return nil;
 }
 
 #pragma mark - TMChannelDelegate
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
            channelChanged:(TWMChannel *)channel {
-    [self.tableView reloadData];
+    [self rebuildData];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
@@ -687,7 +760,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
      channelHistoryLoaded:(TWMChannel *)channel {
     [self loadMessages];
-    [self.tableView reloadData];
+    [self rebuildData];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
@@ -726,14 +799,14 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
                   channel:(TWMChannel *)channel
            messageChanged:(TWMMessage *)message {
-    [self.tableView reloadData];
+    [self rebuildData];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
    typingStartedOnChannel:(TWMChannel *)channel
                    member:(TWMMember *)member {
     [self.typingUsers addObject:member];
-    [self.tableView reloadData];
+    [self rebuildData];
     if ([self isNearBottom]) {
         [self scrollToBottomMessage];
     }
@@ -743,7 +816,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
      typingEndedOnChannel:(TWMChannel *)channel
                    member:(TWMMember *)member {
     [self.typingUsers removeObject:member];
-    [self.tableView reloadData];
+    [self rebuildData];
     if ([self isNearBottom]) {
         [self scrollToBottomMessage];
     }
