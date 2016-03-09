@@ -125,4 +125,15 @@
                      }];
 }
 
++ (NSString *)displayNameForMember:(TWMMember *)member {
+    NSString *displayName = nil;
+    NSString *friendlyName = [[member userInfo] friendlyName];
+    if (![friendlyName isEqualToString:@""]) {
+        displayName = friendlyName;
+    } else {
+        displayName = [[member userInfo] identity];
+    }
+    return displayName;
+}
+
 @end

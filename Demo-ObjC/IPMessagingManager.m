@@ -93,7 +93,7 @@
 }
 
 - (NSString *)identity {
-    return [self.client identity];
+    return [[[self client] userInfo] identity];
 }
 
 #pragma mark Push functionality

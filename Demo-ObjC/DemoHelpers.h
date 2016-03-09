@@ -7,9 +7,13 @@
 
 #import <UIKit/UIKit.h>
 
+#import <TwilioIPMessagingClient/TwilioIPMessagingClient.h>
+
 @interface DemoHelpers : NSObject
 
 + (void)displayToastWithMessage:(NSString *)message
                          inView:(UIView *)view;
+
++ (NSString *)displayNameForMember:(TWMMember *)member;
 
 @end

@@ -67,7 +67,7 @@ static NSString * const kChannelDataData = @"channelDataData";
     NSMutableDictionary *seenBy = [NSMutableDictionary dictionary];
     NSString *myIdentity = [[IPMessagingManager sharedManager] identity];
     for (TWMMember *member in [self.channel.members allObjects]) {
-        if (![member.identity isEqualToString:myIdentity]) {
+        if (![[[member userInfo] identity] isEqualToString:myIdentity]) {
             NSNumber *index = [member lastConsumedMessageIndex];
             if (index) {
                 NSMutableArray *members = seenBy[index];
@@ -148,19 +148,19 @@ static NSString * const kChannelDataData = @"channelDataData";
     UIAlertController *actionsSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     
     __weak __typeof(self) weakSelf = self;
-    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Change Friendly Name"
+    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Channel Friendly Name"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
                                                        [weakSelf changeFriendlyName];
                                                    }]];
     
-    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Change Unique Name"
+    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Channel Unique Name"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
                                                        [weakSelf changeUniqueName];
                                                    }]];
 
-    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Change Topic"
+    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Channel Topic"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
                                                        [weakSelf changeTopic];
@@ -187,6 +187,17 @@ static NSString * const kChannelDataData = @"channelDataData";
                                                        [weakSelf addMember];
                                                    }]];
 
+    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"My Friendly Name"
+                                                     style:UIAlertActionStyleDefault
+                                                   handler:^(UIAlertAction *action) {
+                                                       [weakSelf changeMyFriendlyName];
+                                                   }]];
+    
+    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Mood Message"
+                                                     style:UIAlertActionStyleDefault
+                                                   handler:^(UIAlertAction *action) {
+                                                       [weakSelf changeMoodMessage];
+                                                   }]];
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Leave"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
@@ -228,20 +239,22 @@ static NSString * const kChannelDataData = @"channelDataData";
     if (!members || [members count] == 0) {
         return @"";
     }
-    NSArray *membersSorted = [members sortedArrayUsingComparator:^NSComparisonResult(TWMMember *obj1, TWMMember *obj2) {
-        return [obj1.identity compare:obj2.identity options:NSCaseInsensitiveSearch];
-    }];
-
-    NSMutableString *ret = [NSMutableString string];
     
-    for (int ndx=0; ndx < membersSorted.count; ndx++) {
-        TWMMember *member = (TWMMember *)membersSorted[ndx];
-        if (ndx > 0 && ndx < membersSorted.count - 1) {
+    NSMutableArray *memberDisplayNames = [NSMutableArray array];
+    for (TWMMember *member in members) {
+        [memberDisplayNames addObject:[DemoHelpers displayNameForMember:member]];
+    }
+    [memberDisplayNames sortUsingSelector:@selector(caseInsensitiveCompare:)];
+
+    NSMutableString *ret = [NSMutableString string];    
+    for (int ndx=0; ndx < memberDisplayNames.count; ndx++) {
+        NSString *displayName = memberDisplayNames[ndx];
+        if (ndx > 0 && ndx < memberDisplayNames.count - 1) {
             [ret appendString:@", "];
-        } else if (ndx > 0 && ndx == membersSorted.count - 1) {
+        } else if (ndx > 0 && ndx == memberDisplayNames.count - 1) {
             [ret appendString:@" and "];
         }
-        [ret appendString:member.identity];
+        [ret appendString:displayName];
     }
 
     return ret;
@@ -326,8 +339,14 @@ static NSString * const kChannelDataData = @"channelDataData";
     } else if ([data[kChannelDataType] isEqualToString:kChannelDataTypeMessage]) {
         MessageTableViewCell *messageCell = [tableView dequeueReusableCellWithIdentifier:@"message"];
         TWMMessage *message = data[kChannelDataData];
+        TWMMember *author = [[self channel] memberWithIdentity:message.author];
+        if (author) {
+            messageCell.authorLabel.text = [DemoHelpers displayNameForMember:author];
+        } else {
+            // original author may not exist anymore on channel, display the original username
+            messageCell.authorLabel.text = message.author;
+        }
         [self.channel.messages advanceLastConsumedMessageIndex:message.index];
-        messageCell.authorLabel.text = message.author;
         messageCell.dateLabel.text = message.timestamp;
         messageCell.bodyLabel.text = message.body;
         [messageCell layoutIfNeeded];
@@ -410,10 +429,6 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     
     __weak __typeof(self) weakSelf = self;
     void (^action)(NSString *) = ^void(NSString *newValue) {
-        if (!newValue || newValue.length == 0) {
-            return;
-        }
-
         [self.channel setFriendlyName:newValue
                            completion:^(TWMResult result) {
                                if (result == TWMResultSuccess) {
@@ -424,6 +439,64 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
                                                                  inView:weakSelf.view];
                                }
                            }];
+    };
+    
+    [self promptUserWithTitle:title
+                  placeholder:placeholder
+                 initialValue:initialValue
+                  actionTitle:actionTitle
+                       action:action];
+}
+
+- (void)changeMyFriendlyName {
+    TwilioIPMessagingClient *client = [[IPMessagingManager sharedManager] client];
+    NSString *title = @"My Friendly Name";
+    NSString *placeholder = @"Friendly Name";
+    NSString *initialValue = [[client userInfo] friendlyName];
+    NSString *actionTitle = @"Set";
+    
+    __weak __typeof(self) weakSelf = self;
+    void (^action)(NSString *) = ^void(NSString *newValue) {
+        [[client userInfo] setFriendlyName:newValue
+                                completion:^(TWMResult result) {
+                                    if (result == TWMResultSuccess) {
+                                        [DemoHelpers displayToastWithMessage:@"My friendly name changed."
+                                                                      inView:weakSelf.view];
+                                    } else {
+                                        [DemoHelpers displayToastWithMessage:@"My friendly name could not be changed."
+                                                                      inView:weakSelf.view];
+                                    }
+                                }];
+    };
+    
+    [self promptUserWithTitle:title
+                  placeholder:placeholder
+                 initialValue:initialValue
+                  actionTitle:actionTitle
+                       action:action];
+}
+
+- (void)changeMoodMessage {
+    TwilioIPMessagingClient *client = [[IPMessagingManager sharedManager] client];
+    NSMutableDictionary<NSString *, id> *attributes = [[[client userInfo] attributes] mutableCopy];
+    NSString *title = @"My Mood Message";
+    NSString *placeholder = @"Mood Message";
+    NSString *initialValue = attributes[@"mood"];
+    NSString *actionTitle = @"Set";
+    
+    __weak __typeof(self) weakSelf = self;
+    void (^action)(NSString *) = ^void(NSString *newValue) {
+        attributes[@"mood"] = newValue;
+        [[client userInfo] setAttributes:attributes
+                              completion:^(TWMResult result) {
+                                  if (result == TWMResultSuccess) {
+                                      [DemoHelpers displayToastWithMessage:@"Mood message changed."
+                                                                    inView:weakSelf.view];
+                                  } else {
+                                      [DemoHelpers displayToastWithMessage:@"Mood message could not be changed."
+                                                                    inView:weakSelf.view];
+                                  }
+                              }];
     };
     
     [self promptUserWithTitle:title
@@ -766,7 +839,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
                   channel:(TWMChannel *)channel
              memberJoined:(TWMMember *)member {
-    [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ joined the channel.", member.identity]
+    [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ joined the channel.", [DemoHelpers displayNameForMember:member]]
                                   inView:self.view];
 }
 
@@ -778,8 +851,18 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
                   channel:(TWMChannel *)channel
+                   member:(TWMMember *)member
+                 userInfo:(TWMUserInfo *)userInfo
+                  updated:(TWMUserInfoUpdate)updated {
+    if (updated == TWMUserInfoUpdateFriendlyName) {
+        [self rebuildData];
+    }
+}
+
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
+                  channel:(TWMChannel *)channel
                memberLeft:(TWMMember *)member {
-    [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ left the channel.", member.identity]
+    [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ left the channel.", [DemoHelpers displayNameForMember:member]]
                                   inView:self.view];
 }
 
