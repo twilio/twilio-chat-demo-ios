@@ -415,9 +415,10 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
         TWMMessage *message = [self.channel.messages createMessageWithBody:textField.text];
         textField.text = @"";
         [self.channel.messages sendMessage:message
-                                completion:^(TWMResult result) {
-                                    if (result == TWMResultFailure) {
+                                completion:^(TWMResult *result) {
+                                    if (!result.isSuccessful) {
                                         [DemoHelpers displayToastWithMessage:@"Failed to send message." inView:self.view];
+                                        NSLog(@"%s: %@", __FUNCTION__, result.error);
                                     }
                                 }];
     }
@@ -435,13 +436,14 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     __weak __typeof(self) weakSelf = self;
     void (^action)(NSString *) = ^void(NSString *newValue) {
         [self.channel setFriendlyName:newValue
-                           completion:^(TWMResult result) {
-                               if (result == TWMResultSuccess) {
+                           completion:^(TWMResult *result) {
+                               if (result.isSuccessful) {
                                    [DemoHelpers displayToastWithMessage:@"Friendly name changed."
                                                                  inView:weakSelf.view];
                                } else {
                                    [DemoHelpers displayToastWithMessage:@"Friendly name could not be changed."
                                                                  inView:weakSelf.view];
+                                   NSLog(@"%s: %@", __FUNCTION__, result.error);
                                }
                            }];
     };
@@ -463,13 +465,14 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     __weak __typeof(self) weakSelf = self;
     void (^action)(NSString *) = ^void(NSString *newValue) {
         [[client userInfo] setFriendlyName:newValue
-                                completion:^(TWMResult result) {
-                                    if (result == TWMResultSuccess) {
+                                completion:^(TWMResult *result) {
+                                    if (result.isSuccessful) {
                                         [DemoHelpers displayToastWithMessage:@"My friendly name changed."
                                                                       inView:weakSelf.view];
                                     } else {
                                         [DemoHelpers displayToastWithMessage:@"My friendly name could not be changed."
                                                                       inView:weakSelf.view];
+                                        NSLog(@"%s: %@", __FUNCTION__, result.error);
                                     }
                                 }];
     };
@@ -493,13 +496,14 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     void (^action)(NSString *) = ^void(NSString *newValue) {
         attributes[@"email"] = newValue;
         [[client userInfo] setAttributes:attributes
-                              completion:^(TWMResult result) {
-                                  if (result == TWMResultSuccess) {
+                              completion:^(TWMResult *result) {
+                                  if (result.isSuccessful) {
                                       [DemoHelpers displayToastWithMessage:@"Avatar email changed."
                                                                     inView:weakSelf.view];
                                   } else {
                                       [DemoHelpers displayToastWithMessage:@"Avatar email could not be changed."
                                                                     inView:weakSelf.view];
+                                      NSLog(@"%s: %@", __FUNCTION__, result.error);
                                   }
                               }];
     };
@@ -525,13 +529,14 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
         }
         attributes[@"topic"] = newValue;
         [self.channel setAttributes:attributes
-                         completion:^(TWMResult result) {
-                             if (result == TWMResultSuccess) {
+                         completion:^(TWMResult *result) {
+                             if (result.isSuccessful) {
                                  [DemoHelpers displayToastWithMessage:@"Topic changed."
                                                                inView:weakSelf.view];
                              } else {
                                  [DemoHelpers displayToastWithMessage:@"Topic could not be changed."
                                                                inView:weakSelf.view];
+                                 NSLog(@"%s: %@", __FUNCTION__, result.error);
                              }
                          }];
     };
@@ -552,13 +557,14 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     __weak __typeof(self) weakSelf = self;
     void (^action)(NSString *) = ^void(NSString *newValue) {
         [self.channel setUniqueName:newValue
-                         completion:^(TWMResult result) {
-                             if (result == TWMResultSuccess) {
+                         completion:^(TWMResult *result) {
+                             if (result.isSuccessful) {
                                  [DemoHelpers displayToastWithMessage:@"Unique Name changed."
                                                                inView:weakSelf.view];
                              } else {
                                  [DemoHelpers displayToastWithMessage:@"Unique Name could not be changed to the specified value."
                                                                inView:weakSelf.view];
+                                 NSLog(@"%s: %@", __FUNCTION__, result.error);
                              }
                          }];
     };
@@ -579,13 +585,14 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     __weak __typeof(self) weakSelf = self;
     void (^action)(NSString *) = ^void(NSString *newValue) {
         [message updateBody:newValue
-                 completion:^(TWMResult result) {
-                     if (result == TWMResultSuccess) {
+                 completion:^(TWMResult *result) {
+                     if (result.isSuccessful) {
                          [DemoHelpers displayToastWithMessage:@"Body changed."
                                                        inView:weakSelf.view];
                      } else {
                          [DemoHelpers displayToastWithMessage:@"Body could not be updated."
                                                        inView:weakSelf.view];
+                         NSLog(@"%s: %@", __FUNCTION__, result.error);
                      }
                  }];
     };
@@ -610,13 +617,14 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
         }
         
         [self.channel.members inviteByIdentity:newValue
-                                    completion:^(TWMResult result) {
-                                        if (result == TWMResultSuccess) {
+                                    completion:^(TWMResult *result) {
+                                        if (result.isSuccessful) {
                                             [DemoHelpers displayToastWithMessage:@"User invited."
                                                                           inView:weakSelf.view];
                                         } else {
                                             [DemoHelpers displayToastWithMessage:@"User could not be invited."
                                                                           inView:weakSelf.view];
+                                            NSLog(@"%s: %@", __FUNCTION__, result.error);
                                         }
                                     }];
     };
@@ -641,13 +649,14 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
         }
         
         [self.channel.members addByIdentity:newValue
-                                 completion:^(TWMResult result) {
-                                     if (result == TWMResultSuccess) {
+                                 completion:^(TWMResult *result) {
+                                     if (result.isSuccessful) {
                                          [DemoHelpers displayToastWithMessage:@"User added."
                                                                        inView:weakSelf.view];
                                      } else {
                                          [DemoHelpers displayToastWithMessage:@"User could not be added."
                                                                        inView:weakSelf.view];
+                                         NSLog(@"%s: %@", __FUNCTION__, result.error);
                                      }
                                  }];
     };
@@ -665,18 +674,19 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (void)leaveChannel {
-    [self.channel leaveWithCompletion:^(TWMResult result) {
-        if (result == TWMResultSuccess) {
+    [self.channel leaveWithCompletion:^(TWMResult *result) {
+        if (result.isSuccessful) {
             [self performSegueWithIdentifier:@"returnToChannels" sender:nil];
         } else {
             [DemoHelpers displayToastWithMessage:@"Failed to leave channel." inView:self.view];
+            NSLog(@"%s: %@", __FUNCTION__, result.error);
         }
     }];
 }
 
 - (void)destroyMessage:(TWMMessage *)message {
-    [self.channel.messages removeMessage:message completion:^(TWMResult result) {
-        if (result == TWMResultSuccess) {
+    [self.channel.messages removeMessage:message completion:^(TWMResult *result) {
+        if (result.isSuccessful) {
             [self rebuildData];
         } else {
             [DemoHelpers displayToastWithMessage:@"Failed to remove message." inView:self.view];

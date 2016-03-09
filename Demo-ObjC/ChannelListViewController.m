@@ -116,13 +116,14 @@
                                      }
                                      
                                      [self.channelsList createChannelWithOptions:options
-                                                                      completion:^(TWMResult result, TWMChannel *channel) {
-                                                                          if (result == TWMResultSuccess) {
+                                                                      completion:^(TWMResult *result, TWMChannel *channel) {
+                                                                          if (result.isSuccessful) {
                                                                               [DemoHelpers displayToastWithMessage:@"Channel Created"
                                                                                                             inView:self.view];
                                                                           } else {
                                                                               [DemoHelpers displayToastWithMessage:@"Channel Create Failed"
                                                                                                             inView:self.view];
+                                                                              NSLog(@"%s: %@", __FUNCTION__, result.error);
                                                                           }
                                                                       }];
                                  }]];
@@ -198,14 +199,14 @@
     self.channels = nil;
     [self.tableView reloadData];
     
-    [[[IPMessagingManager sharedManager] client] channelsListWithCompletion:^(TWMResult result, TWMChannels *channelsList) {
+    [[[IPMessagingManager sharedManager] client] channelsListWithCompletion:^(TWMResult *result, TWMChannels *channelsList) {
         self.channels = [[NSMutableOrderedSet alloc] init];
-        if (result == TWMResultSuccess) {
+        if (result.isSuccessful) {
             self.channelsList = channelsList;
             
             dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-                [self.channelsList loadChannelsWithCompletion:^(TWMResult result) {
-                    if (result == TWMResultSuccess) {
+                [self.channelsList loadChannelsWithCompletion:^(TWMResult *result) {
+                    if (result.isSuccessful) {
                         [self.channels addObjectsFromArray:[self.channelsList allObjects]];
                         [self sortChannels];
                         
@@ -219,6 +220,7 @@
                 }];
             });
         } else {
+            NSLog(@"%s: %@", __FUNCTION__, result.error);
             UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"IP Messaging Demo"
                                                                            message:@"Failed to load channels."
                                                                     preferredStyle:UIAlertControllerStyleAlert];
@@ -237,52 +239,56 @@
 }
 
 - (void)leaveChannel:(TWMChannel *)channel {
-    [channel leaveWithCompletion:^(TWMResult result) {
-        if (result == TWMResultSuccess) {
+    [channel leaveWithCompletion:^(TWMResult *result) {
+        if (result.isSuccessful) {
             [DemoHelpers displayToastWithMessage:@"Channel left."
                                           inView:self.view];
         } else {
             [DemoHelpers displayToastWithMessage:@"Channel leave failed."
                                           inView:self.view];
+            NSLog(@"%s: %@", __FUNCTION__, result.error);
         }
         [self.tableView reloadData];
     }];
 }
 
 - (void)destroyChannel:(TWMChannel *)channel {
-    [channel destroyWithCompletion:^(TWMResult result) {
-        if (result == TWMResultSuccess) {
+    [channel destroyWithCompletion:^(TWMResult *result) {
+        if (result.isSuccessful) {
             [DemoHelpers displayToastWithMessage:@"Channel destroyed."
                                           inView:self.view];
         } else {
             [DemoHelpers displayToastWithMessage:@"Channel destroy failed."
                                           inView:self.view];
+            NSLog(@"%s: %@", __FUNCTION__, result.error);
         }
         [self.tableView reloadData];
     }];
 }
 
 - (void)joinChannel:(TWMChannel *)channel {
-    [channel joinWithCompletion:^(TWMResult result) {
-        if (result == TWMResultSuccess) {
+    [channel joinWithCompletion:^(TWMResult *result) {
+        if (result.isSuccessful) {
             [DemoHelpers displayToastWithMessage:@"Channel joined."
                                           inView:self.view];
         } else {
             [DemoHelpers displayToastWithMessage:@"Channel join failed."
                                           inView:self.view];
+            NSLog(@"%s: %@", __FUNCTION__, result.error);
         }
         [self.tableView reloadData];
     }];
 }
 
 - (void)declineInviteOnChannel:(TWMChannel *)channel {
-    [channel declineInvitationWithCompletion:^(TWMResult result) {
-        if (result == TWMResultSuccess) {
+    [channel declineInvitationWithCompletion:^(TWMResult *result) {
+        if (result.isSuccessful) {
             [DemoHelpers displayToastWithMessage:@"Invite declined."
                                           inView:self.view];
         } else {
             [DemoHelpers displayToastWithMessage:@"Invite declined failed."
                                           inView:self.view];
+            NSLog(@"%s: %@", __FUNCTION__, result.error);
         }
         [self.tableView reloadData];
     }];
