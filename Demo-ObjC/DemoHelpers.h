@@ -8,6 +8,7 @@
 #import <UIKit/UIKit.h>
 
 #import <TwilioIPMessagingClient/TwilioIPMessagingClient.h>
+#import <TwilioIPMessagingClient/TWMUserInfo.h>
 
 @interface DemoHelpers : NSObject
 
@@ -15,5 +16,9 @@
                          inView:(UIView *)view;
 
 + (NSString *)displayNameForMember:(TWMMember *)member;
+
++ (UIImage *)avatarForUserInfo:(TWMUserInfo *)userInfo
+                          size:(NSUInteger)size
+                 scalingFactor:(CGFloat)scale;
 
 @end

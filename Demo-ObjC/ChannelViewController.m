@@ -65,9 +65,8 @@ static NSString * const kChannelDataData = @"channelDataData";
 
 - (void)refreshSeenBy {
     NSMutableDictionary *seenBy = [NSMutableDictionary dictionary];
-    NSString *myIdentity = [[IPMessagingManager sharedManager] identity];
     for (TWMMember *member in [self.channel.members allObjects]) {
-        if (![[[member userInfo] identity] isEqualToString:myIdentity]) {
+        if ([self isMe:member]) {
             NSNumber *index = [member lastConsumedMessageIndex];
             if (index) {
                 NSMutableArray *members = seenBy[index];
@@ -193,10 +192,10 @@ static NSString * const kChannelDataData = @"channelDataData";
                                                        [weakSelf changeMyFriendlyName];
                                                    }]];
     
-    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Mood Message"
+    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Avatar Email"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
-                                                       [weakSelf changeMoodMessage];
+                                                       [weakSelf changeAvatarEmail];
                                                    }]];
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Leave"
                                                      style:UIAlertActionStyleDefault
@@ -349,6 +348,12 @@ static NSString * const kChannelDataData = @"channelDataData";
         [self.channel.messages advanceLastConsumedMessageIndex:message.index];
         messageCell.dateLabel.text = message.timestamp;
         messageCell.bodyLabel.text = message.body;
+        messageCell.avatarImage.image = [DemoHelpers avatarForUserInfo:author.userInfo size:44.0 scalingFactor:2.0];
+        if ([self isMe:author]) {
+            messageCell.contentView.backgroundColor = [UIColor colorWithWhite:0.96f alpha:1.0f];
+        } else {
+            messageCell.contentView.backgroundColor = [UIColor whiteColor];
+        }
         [messageCell layoutIfNeeded];
         
         cell = messageCell;
@@ -476,24 +481,24 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
                        action:action];
 }
 
-- (void)changeMoodMessage {
+- (void)changeAvatarEmail {
     TwilioIPMessagingClient *client = [[IPMessagingManager sharedManager] client];
     NSMutableDictionary<NSString *, id> *attributes = [[[client userInfo] attributes] mutableCopy];
-    NSString *title = @"My Mood Message";
-    NSString *placeholder = @"Mood Message";
-    NSString *initialValue = attributes[@"mood"];
+    NSString *title = @"Avatar Email Address";
+    NSString *placeholder = @"Email Address";
+    NSString *initialValue = attributes[@"email"];
     NSString *actionTitle = @"Set";
     
     __weak __typeof(self) weakSelf = self;
     void (^action)(NSString *) = ^void(NSString *newValue) {
-        attributes[@"mood"] = newValue;
+        attributes[@"email"] = newValue;
         [[client userInfo] setAttributes:attributes
                               completion:^(TWMResult result) {
                                   if (result == TWMResultSuccess) {
-                                      [DemoHelpers displayToastWithMessage:@"Mood message changed."
+                                      [DemoHelpers displayToastWithMessage:@"Avatar email changed."
                                                                     inView:weakSelf.view];
                                   } else {
-                                      [DemoHelpers displayToastWithMessage:@"Mood message could not be changed."
+                                      [DemoHelpers displayToastWithMessage:@"Avatar email could not be changed."
                                                                     inView:weakSelf.view];
                                   }
                               }];
@@ -816,6 +821,10 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     return nil;
 }
 
+- (BOOL)isMe:(TWMMember *)member {
+    return ([member userInfo] == [[[IPMessagingManager sharedManager] client] userInfo]);
+}
+
 #pragma mark - TMChannelDelegate
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
@@ -856,6 +865,8 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
                   updated:(TWMUserInfoUpdate)updated {
     if (updated == TWMUserInfoUpdateFriendlyName) {
         [self rebuildData];
+    } else if (updated == TWMUserInfoUpdateAttributes) {
+        [self.tableView reloadData];
     }
 }
 
