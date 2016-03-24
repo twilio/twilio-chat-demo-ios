@@ -66,7 +66,7 @@ static NSString * const kChannelDataData = @"channelDataData";
 - (void)refreshSeenBy {
     NSMutableDictionary *seenBy = [NSMutableDictionary dictionary];
     for (TWMMember *member in [self.channel.members allObjects]) {
-        if ([self isMe:member]) {
+        if (![self isMe:member]) {
             NSNumber *index = [member lastConsumedMessageIndex];
             if (index) {
                 NSMutableArray *members = seenBy[index];
