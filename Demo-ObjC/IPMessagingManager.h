@@ -2,7 +2,7 @@
 //  IPMessagingManager.h
 //  Twilio IP Messaging Demo
 //
-//  Copyright (c) 2015 Twilio. All rights reserved.
+//  Copyright (c) 2011-2016 Twilio. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
@@ -22,5 +22,7 @@
 
 - (void)updatePushToken:(NSData *)token;
 - (void)receivedNotification:(NSDictionary *)notification;
+
+- (NSString *)identity;
 
 @end

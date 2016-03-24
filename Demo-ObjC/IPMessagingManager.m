@@ -2,7 +2,7 @@
 //  IPMessagingManager.m
 //  Twilio IP Messaging Demo
 //
-//  Copyright (c) 2015 Twilio. All rights reserved.
+//  Copyright (c) 2011-2016 Twilio. All rights reserved.
 //
 
 #import "AppDelegate.h"
@@ -90,6 +90,10 @@
 - (void)receivedNotification:(NSDictionary *)notification {
     self.lastNotification = notification;
     [self updateIpMessagingClient];
+}
+
+- (NSString *)identity {
+    return [[[self client] userInfo] identity];
 }
 
 #pragma mark Push functionality

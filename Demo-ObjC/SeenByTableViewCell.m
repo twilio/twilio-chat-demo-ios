@@ -1,13 +1,13 @@
 //
-//  MessageTableViewCell.m
-//  Twilio IP Messaging Demo
+//  SeenByTableViewCell.m
+//  Twilio IP Messaging Client
 //
 //  Copyright (c) 2011-2016 Twilio. All rights reserved.
 //
 
-#import "MessageTableViewCell.h"
+#import "SeenByTableViewCell.h"
 
-@implementation MessageTableViewCell
+@implementation SeenByTableViewCell
 
 - (void)awakeFromNib {
     // Initialization code
