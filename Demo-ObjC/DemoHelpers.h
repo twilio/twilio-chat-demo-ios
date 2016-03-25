@@ -17,6 +17,8 @@
 
 + (NSString *)displayNameForMember:(TWMMember *)member;
 
++ (NSString *)messageDisplayForDateString:(NSString *)dateString;
+
 + (UIImage *)avatarForUserInfo:(TWMUserInfo *)userInfo
                           size:(NSUInteger)size
                  scalingFactor:(CGFloat)scale;

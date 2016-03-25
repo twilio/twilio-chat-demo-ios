@@ -157,6 +157,40 @@
     return displayName;
 }
 
++ (NSString *)messageDisplayForDateString:(NSString *)dateString {
+    NSDate *date = [self dateFromTimestampString:dateString];
+    NSDateFormatter *formatter = nil;
+    if ([[NSCalendar currentCalendar] isDateInToday:date]) {
+        formatter = [self cachedDateFormatterWithKey:@"DemoDateFormatter-Today"
+                                         initializer:^(NSDateFormatter *formatter) {
+                                             [formatter setTimeZone:[NSTimeZone defaultTimeZone]];
+                                             formatter.dateFormat = [NSDateFormatter dateFormatFromTemplate:@"hma" options:0 locale:formatter.locale];
+                                         }];
+    } else {
+        formatter = [self cachedDateFormatterWithKey:@"DemoDateFormatter-AnyDay"
+                                         initializer:^(NSDateFormatter *formatter) {
+                                             [formatter setTimeZone:[NSTimeZone defaultTimeZone]];
+                                             formatter.dateFormat = [NSDateFormatter dateFormatFromTemplate:@"MMMd, hma" options:0 locale:formatter.locale];
+                                         }];
+    }
+    return [formatter stringFromDate:date];
+}
+
++ (NSDate *)dateFromTimestampString:(NSString *)timestamp {
+    NSDate *ret = nil;
+    
+    if (timestamp && ([timestamp length] > 0 )) {
+        NSDateFormatter *formatter = [self cachedDateFormatterWithKey:@"DemoDateFormatter"
+                                                          initializer:^(NSDateFormatter *formatter) {
+                                                              [formatter setDateFormat:@"yyyy'-'MM'-'dd'T'HH':'mm':'ss.SSSZ"];
+                                                          }];
+        
+        ret = [formatter dateFromString:timestamp];
+    }
+    
+    return ret;
+}
+
 + (UIImage *)avatarForUserInfo:(TWMUserInfo *)userInfo
                           size:(NSUInteger)size
                  scalingFactor:(CGFloat)scale {
@@ -184,6 +218,18 @@
 }
 
 #pragma mark - Internal helper methods
+
++ (NSDateFormatter *)cachedDateFormatterWithKey:(NSString *)cacheKey
+                                    initializer:(void (^)(NSDateFormatter *formatter))initializer {
+    NSMutableDictionary *threadDictionary = [[NSThread currentThread] threadDictionary];
+    NSDateFormatter *formatter = threadDictionary[cacheKey];
+    if (!formatter) {
+        formatter = [[NSDateFormatter alloc] init];
+        initializer(formatter);
+        threadDictionary[cacheKey] = formatter;
+    }
+    return formatter;
+}
 
 + (NSString *)md5ForString:(NSString *)input {
     unsigned char md5[CC_MD5_DIGEST_LENGTH];

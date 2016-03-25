@@ -346,7 +346,7 @@ static NSString * const kChannelDataData = @"channelDataData";
             messageCell.authorLabel.text = message.author;
         }
         [self.channel.messages advanceLastConsumedMessageIndex:message.index];
-        messageCell.dateLabel.text = message.timestamp;
+        messageCell.dateLabel.text = [DemoHelpers messageDisplayForDateString:message.timestamp];
         messageCell.bodyLabel.text = message.body;
         messageCell.avatarImage.image = [DemoHelpers avatarForUserInfo:author.userInfo size:44.0 scalingFactor:2.0];
         if ([self isMe:author]) {
