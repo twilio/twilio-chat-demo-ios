@@ -204,7 +204,7 @@
                          size:(NSUInteger)size
                 scalingFactor:(CGFloat)scale {
     NSString *emailHash = [self md5ForString:email];
-    NSString *avatarURLString = [NSString stringWithFormat:@"https://www.gravatar.com/avatar/%@?d=404&s=%ld", emailHash, (NSUInteger)(size*scale)];
+    NSString *avatarURLString = [NSString stringWithFormat:@"https://www.gravatar.com/avatar/%@?d=404&s=%ld", emailHash, (unsigned long)(size*scale)];
     NSURL *avatarURL = [NSURL URLWithString:avatarURLString];
     NSData *data = [NSData dataWithContentsOfURL:avatarURL];
     UIImage *avatarImage = [UIImage imageWithData:data scale:scale];
