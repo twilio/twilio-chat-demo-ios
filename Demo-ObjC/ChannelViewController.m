@@ -260,28 +260,30 @@ static NSString * const kChannelDataData = @"channelDataData";
     NSMutableArray<id> *newData = [NSMutableArray arrayWithArray:[self.messages array]];
     NSArray *consumptionKeys = [[[self seenBy] allKeys] sortedArrayUsingSelector:@selector(compare:)];
 
-    if (self.userConsumedIndex) {
-        TWMMessage *consumptionMessage = [[[self channel] messages] messageForConsumptionIndex:self.userConsumedIndex];
-        if (consumptionMessage) {
-            NSUInteger ndx = [newData indexOfObject:consumptionMessage];
-            if (ndx != (newData.count - 1)) {
+    if (newData.count > 0) {
+        if (self.userConsumedIndex) {
+            TWMMessage *consumptionMessage = [[[self channel] messages] messageForConsumptionIndex:self.userConsumedIndex];
+            if (consumptionMessage) {
+                NSUInteger ndx = [newData indexOfObject:consumptionMessage];
+                if (ndx != (newData.count - 1)) {
+                    [newData insertObject:@{
+                                            kChannelDataType: kChannelDataTypeUserConsumption
+                                            }
+                                  atIndex:ndx+1];
+                }
+            }
+        }
+        
+        for (NSNumber *consumptionIndex in consumptionKeys) {
+            TWMMessage *consumptionMessage = [[[self channel] messages] messageForConsumptionIndex:consumptionIndex];
+            if (consumptionMessage) {
+                NSUInteger ndx = [newData indexOfObject:consumptionMessage];
                 [newData insertObject:@{
-                                        kChannelDataType: kChannelDataTypeUserConsumption
+                                        kChannelDataType: kChannelDataTypeMemberConsumption,
+                                        kChannelDataData: self.seenBy[consumptionIndex]
                                         }
                               atIndex:ndx+1];
             }
-        }
-    }
-    
-    for (NSNumber *consumptionIndex in consumptionKeys) {
-        TWMMessage *consumptionMessage = [[[self channel] messages] messageForConsumptionIndex:consumptionIndex];
-        if (consumptionMessage) {
-            NSUInteger ndx = [newData indexOfObject:consumptionMessage];
-            [newData insertObject:@{
-                                    kChannelDataType: kChannelDataTypeMemberConsumption,
-                                    kChannelDataData: self.seenBy[consumptionIndex]
-                                    }
-                          atIndex:ndx+1];
         }
     }
     
