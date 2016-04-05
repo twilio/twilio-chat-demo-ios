@@ -796,6 +796,9 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     if (!self.tableView.dataSource) { // tableview is not yet initialized
         return;
     }
+    if (self.typingUsers.count > 0) {
+        messagesCount++;
+    }
     
     [self scrollToIndex:messagesCount - 1 position:UITableViewScrollPositionBottom];
 }
