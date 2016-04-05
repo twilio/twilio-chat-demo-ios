@@ -2,7 +2,7 @@
 //  ChannelListViewController.m
 //  Twilio IP Messaging Demo
 //
-//  Copyright (c) 2015 Twilio. All rights reserved.
+//  Copyright (c) 2011-2016 Twilio. All rights reserved.
 //
 
 #import "ChannelListViewController.h"
@@ -116,20 +116,14 @@
                                      }
                                      
                                      [self.channelsList createChannelWithOptions:options
-                                                                      completion:^(TWMResult result, TWMChannel *channel) {
-                                                                          if (result == TWMResultSuccess) {
+                                                                      completion:^(TWMResult *result, TWMChannel *channel) {
+                                                                          if (result.isSuccessful) {
                                                                               [DemoHelpers displayToastWithMessage:@"Channel Created"
                                                                                                             inView:self.view];
-                                                                              [channel joinWithCompletion:^(TWMResult result) {
-                                                                                  [channel setAttributes:@{@"topic": @""
-                                                                                                           }
-                                                                                              completion:^(TWMResult result) {
-                                                                                                  
-                                                                                              }];
-                                                                              }];
                                                                           } else {
                                                                               [DemoHelpers displayToastWithMessage:@"Channel Create Failed"
                                                                                                             inView:self.view];
+                                                                              NSLog(@"%s: %@", __FUNCTION__, result.error);
                                                                           }
                                                                       }];
                                  }]];
@@ -205,70 +199,97 @@
     self.channels = nil;
     [self.tableView reloadData];
     
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        [[[IPMessagingManager sharedManager] client] channelsListWithCompletion:^(TWMResult result, TWMChannels *channelsList) {
-            self.channels = [[NSMutableOrderedSet alloc] init];
-            if (result == TWMResultSuccess) {
-                self.channelsList = channelsList;
-                
-                dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-                    [self.channelsList loadChannelsWithCompletion:^(TWMResult result) {
-                        if (result == TWMResultSuccess) {
-                            [self.channels addObjectsFromArray:[self.channelsList allObjects]];
-                            [self sortChannels];
-                            
-                            dispatch_async(dispatch_get_main_queue(), ^{
-                                [self.tableView reloadData];
-                            });
-                        } else {
-                            [DemoHelpers displayToastWithMessage:@"Channel list load failed." inView:self.view];
-                        }
-                    }];
-                });
-            } else {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"IP Messaging Demo" message:@"Failed to load channels." preferredStyle:UIAlertControllerStyleAlert];
-                    [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
-                    [self presentViewController:alert animated:YES completion:nil];
-                    
-                    self.channelsList = nil;
-                    [self.channels removeAllObjects];
-                    
-                    [self.tableView reloadData];
-                });
-            }
-        }];
-    });
+    [[[IPMessagingManager sharedManager] client] channelsListWithCompletion:^(TWMResult *result, TWMChannels *channelsList) {
+        self.channels = [[NSMutableOrderedSet alloc] init];
+        if (result.isSuccessful) {
+            self.channelsList = channelsList;
+            
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                [self.channelsList loadChannelsWithCompletion:^(TWMResult *result) {
+                    if (result.isSuccessful) {
+                        [self.channels addObjectsFromArray:[self.channelsList allObjects]];
+                        [self sortChannels];
+                        
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            [self.tableView reloadData];
+                        });
+                    } else {
+                        [DemoHelpers displayToastWithMessage:@"Channel list load failed."
+                                                      inView:self.view];
+                    }
+                }];
+            });
+        } else {
+            NSLog(@"%s: %@", __FUNCTION__, result.error);
+            UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"IP Messaging Demo"
+                                                                           message:@"Failed to load channels."
+                                                                    preferredStyle:UIAlertControllerStyleAlert];
+            [alert addAction:[UIAlertAction actionWithTitle:@"OK"
+                                                      style:UIAlertActionStyleDefault handler:nil]];
+            [self presentViewController:alert
+                               animated:YES
+                             completion:nil];
+            
+            self.channelsList = nil;
+            [self.channels removeAllObjects];
+            
+            [self.tableView reloadData];
+        }
+    }];
 }
 
 - (void)leaveChannel:(TWMChannel *)channel {
-    [channel leaveWithCompletion:^(TWMResult result) {
-        [DemoHelpers displayToastWithMessage:@"Channel Left"
-                                      inView:self.view];
+    [channel leaveWithCompletion:^(TWMResult *result) {
+        if (result.isSuccessful) {
+            [DemoHelpers displayToastWithMessage:@"Channel left."
+                                          inView:self.view];
+        } else {
+            [DemoHelpers displayToastWithMessage:@"Channel leave failed."
+                                          inView:self.view];
+            NSLog(@"%s: %@", __FUNCTION__, result.error);
+        }
         [self.tableView reloadData];
     }];
 }
 
 - (void)destroyChannel:(TWMChannel *)channel {
-    [channel destroyWithCompletion:^(TWMResult result) {
-        [DemoHelpers displayToastWithMessage:@"Channel Destroyed"
-                                      inView:self.view];
+    [channel destroyWithCompletion:^(TWMResult *result) {
+        if (result.isSuccessful) {
+            [DemoHelpers displayToastWithMessage:@"Channel destroyed."
+                                          inView:self.view];
+        } else {
+            [DemoHelpers displayToastWithMessage:@"Channel destroy failed."
+                                          inView:self.view];
+            NSLog(@"%s: %@", __FUNCTION__, result.error);
+        }
         [self.tableView reloadData];
     }];
 }
 
 - (void)joinChannel:(TWMChannel *)channel {
-    [channel joinWithCompletion:^(TWMResult result) {
-        [DemoHelpers displayToastWithMessage:@"Channel Joined"
-                                      inView:self.view];
+    [channel joinWithCompletion:^(TWMResult *result) {
+        if (result.isSuccessful) {
+            [DemoHelpers displayToastWithMessage:@"Channel joined."
+                                          inView:self.view];
+        } else {
+            [DemoHelpers displayToastWithMessage:@"Channel join failed."
+                                          inView:self.view];
+            NSLog(@"%s: %@", __FUNCTION__, result.error);
+        }
         [self.tableView reloadData];
     }];
 }
 
 - (void)declineInviteOnChannel:(TWMChannel *)channel {
-    [channel declineInvitationWithCompletion:^(TWMResult result) {
-        [DemoHelpers displayToastWithMessage:@"Invite Declined"
-                                      inView:self.view];
+    [channel declineInvitationWithCompletion:^(TWMResult *result) {
+        if (result.isSuccessful) {
+            [DemoHelpers displayToastWithMessage:@"Invite declined."
+                                          inView:self.view];
+        } else {
+            [DemoHelpers displayToastWithMessage:@"Invite declined failed."
+                                          inView:self.view];
+            NSLog(@"%s: %@", __FUNCTION__, result.error);
+        }
         [self.tableView reloadData];
     }];
 }
@@ -398,24 +419,18 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 #pragma mark - TwilioIPMessagingClientDelegate
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelAdded:(TWMChannel *)channel {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self.channels addObject:channel];
-        [self sortChannels];
-        [self.tableView reloadData];
-    });
+    [self.channels addObject:channel];
+    [self sortChannels];
+    [self.tableView reloadData];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelChanged:(TWMChannel *)channel {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self.tableView reloadData];
-    });
+    [self.tableView reloadData];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelDeleted:(TWMChannel *)channel {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self.channels removeObject:channel];
-        [self.tableView reloadData];
-    });
+    [self.channels removeObject:channel];
+    [self.tableView reloadData];
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client errorReceived:(TWMError *)error {
