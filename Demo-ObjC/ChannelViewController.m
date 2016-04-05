@@ -171,14 +171,11 @@ static NSString * const kChannelDataData = @"channelDataData";
                                                        [weakSelf listMembers];
                                                    }]];
 
-    if (self.channel.type == TWMChannelTypePrivate) {
-        // Invite is only valid for private channels
-        [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Invite Member"
-                                                         style:UIAlertActionStyleDefault
-                                                       handler:^(UIAlertAction *action) {
-                                                           [weakSelf inviteMember];
-                                                       }]];
-    }
+    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Invite Member"
+                                                     style:UIAlertActionStyleDefault
+                                                   handler:^(UIAlertAction *action) {
+                                                       [weakSelf inviteMember];
+                                                   }]];
 
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Add Member"
                                                      style:UIAlertActionStyleDefault
