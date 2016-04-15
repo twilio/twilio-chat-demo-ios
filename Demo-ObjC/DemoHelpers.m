@@ -157,8 +157,7 @@
     return displayName;
 }
 
-+ (NSString *)messageDisplayForDateString:(NSString *)dateString {
-    NSDate *date = [self dateFromTimestampString:dateString];
++ (NSString *)messageDisplayForDate:(NSDate *)date {
     NSDateFormatter *formatter = nil;
     if ([[NSCalendar currentCalendar] isDateInToday:date]) {
         formatter = [self cachedDateFormatterWithKey:@"DemoDateFormatter-Today"
@@ -174,21 +173,6 @@
                                          }];
     }
     return [formatter stringFromDate:date];
-}
-
-+ (NSDate *)dateFromTimestampString:(NSString *)timestamp {
-    NSDate *ret = nil;
-    
-    if (timestamp && ([timestamp length] > 0 )) {
-        NSDateFormatter *formatter = [self cachedDateFormatterWithKey:@"DemoDateFormatter"
-                                                          initializer:^(NSDateFormatter *formatter) {
-                                                              [formatter setDateFormat:@"yyyy'-'MM'-'dd'T'HH':'mm':'ss.SSSZ"];
-                                                          }];
-        
-        ret = [formatter dateFromString:timestamp];
-    }
-    
-    return ret;
 }
 
 + (UIImage *)avatarForUserInfo:(TWMUserInfo *)userInfo
