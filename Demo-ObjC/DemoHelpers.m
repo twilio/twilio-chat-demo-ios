@@ -216,18 +216,23 @@
 }
 
 + (NSString *)md5ForString:(NSString *)input {
-    unsigned char md5[CC_MD5_DIGEST_LENGTH];
-    [self md5ForString:input output:md5];
-    NSMutableString *ret = [NSMutableString string];
-    for (int ndx=0; ndx < CC_MD5_DIGEST_LENGTH; ndx++) {
-        [ret appendFormat:@"%02x", md5[ndx]];
+    NSMutableString *ret = nil;
+    if (input) {
+        unsigned char md5[CC_MD5_DIGEST_LENGTH];
+        [self md5ForString:input output:md5];
+        ret = [NSMutableString string];
+        for (int ndx=0; ndx < CC_MD5_DIGEST_LENGTH; ndx++) {
+            [ret appendFormat:@"%02x", md5[ndx]];
+        }
     }
     return ret;
 }
 
 + (void)md5ForString:(NSString *)input output:(unsigned char *)output {
-    const char *inputCString = [input UTF8String];
-    CC_MD5(inputCString, (CC_LONG)strlen(inputCString), output);
+    if (input) {
+        const char *inputCString = [input UTF8String];
+        CC_MD5(inputCString, (CC_LONG)strlen(inputCString), output);
+    }
 }
 
 + (UIImage *)gravatarForEmail:(NSString *)email
