@@ -24,7 +24,7 @@ static NSString * const kChannelDataData = @"channelDataData";
 @property (weak, nonatomic) IBOutlet UITextField *messageInput;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *keyboardAdjustmentConstraint;
 
-@property (nonatomic, strong) NSMutableOrderedSet *messages;
+@property (nonatomic, strong) NSMutableOrderedSet<TWMMessage *> *messages;
 @property (nonatomic, strong) NSMutableArray<id> *channelData;
 @property (nonatomic, strong) NSMutableArray *typingUsers;
 @property (nonatomic, copy) NSNumber *userConsumedIndex;
@@ -124,6 +124,20 @@ static NSString * const kChannelDataData = @"channelDataData";
     [super viewDidAppear:animated];
     
     [self scrollToLastConsumedMessage];
+    
+    // load up the rest of the history for the channel
+    TWMMessage *firstMessage = [self.messages firstObject];
+    if (firstMessage && [firstMessage.index integerValue] > 0) {
+        [self.channel.messages getMessagesBefore:([firstMessage.index integerValue] - 1)
+                                       withCount:UINT_MAX
+                                      completion:^(TWMResult *result, NSArray<TWMMessage *> *messages) {
+                                          NSIndexSet *indexes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, messages.count)];
+                                          [self.messages insertObjects:messages
+                                                             atIndexes:indexes];
+                                          [self rebuildData];
+                                          [self scrollToLastConsumedMessage];
+        }];
+    }
 }
 
 - (void)viewWillDisappear:(BOOL)animated {

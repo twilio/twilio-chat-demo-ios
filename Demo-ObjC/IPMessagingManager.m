@@ -58,7 +58,10 @@
     
     NSString *token = [self tokenForIdentity:identity];
     self.accessManager = [TwilioAccessManager accessManagerWithToken:token delegate:self];
+    TwilioIPMessagingClientProperties *properties = [[TwilioIPMessagingClientProperties alloc] init];
+    properties.initialMessageCount = 10;
     self.client = [TwilioIPMessagingClient ipMessagingClientWithAccessManager:self.accessManager
+                                                                   properties:properties
                                                                      delegate:nil];
     
     return YES;

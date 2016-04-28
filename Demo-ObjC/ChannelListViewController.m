@@ -15,7 +15,6 @@
 @property (nonatomic, weak) IBOutlet UITableView *tableView;
 
 @property (nonatomic, strong) UIRefreshControl *refreshControl;
-@property (nonatomic, strong) TWMChannels *channelsList;
 @property (nonatomic, strong) NSMutableOrderedSet *channels;
 @end
 
@@ -37,7 +36,10 @@
     TwilioIPMessagingClient *client = [[IPMessagingManager sharedManager] client];
     if (client) {
         client.delegate = self;
-        [self populateChannels];
+        
+        if (client.synchronizationStatus == TWMClientSynchronizationStatusCompleted) {
+            [self populateChannels];
+        }
     }
 }
 
@@ -115,7 +117,8 @@
                                          options[TWMChannelOptionType] = @(TWMChannelTypePrivate);
                                      }
                                      
-                                     [self.channelsList createChannelWithOptions:options
+                                     TWMChannels *channelsList = [[[IPMessagingManager sharedManager] client] channelsList];
+                                     [channelsList createChannelWithOptions:options
                                                                       completion:^(TWMResult *result, TWMChannel *channel) {
                                                                           if (result.isSuccessful) {
                                                                               [DemoHelpers displayToastWithMessage:@"Channel Created"
@@ -195,47 +198,20 @@
 #pragma mark - Demo helpers
 
 - (void)populateChannels {
-    self.channelsList = nil;
     self.channels = nil;
     [self.tableView reloadData];
-    
-    [[[IPMessagingManager sharedManager] client] channelsListWithCompletion:^(TWMResult *result, TWMChannels *channelsList) {
-        self.channels = [[NSMutableOrderedSet alloc] init];
-        if (result.isSuccessful) {
-            self.channelsList = channelsList;
-            
-            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-                [self.channelsList loadChannelsWithCompletion:^(TWMResult *result) {
-                    if (result.isSuccessful) {
-                        [self.channels addObjectsFromArray:[self.channelsList allObjects]];
-                        [self sortChannels];
-                        
-                        dispatch_async(dispatch_get_main_queue(), ^{
-                            [self.tableView reloadData];
-                        });
-                    } else {
-                        [DemoHelpers displayToastWithMessage:@"Channel list load failed."
-                                                      inView:self.view];
-                    }
-                }];
-            });
-        } else {
-            NSLog(@"%s: %@", __FUNCTION__, result.error);
-            UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"IP Messaging Demo"
-                                                                           message:@"Failed to load channels."
-                                                                    preferredStyle:UIAlertControllerStyleAlert];
-            [alert addAction:[UIAlertAction actionWithTitle:@"OK"
-                                                      style:UIAlertActionStyleDefault handler:nil]];
-            [self presentViewController:alert
-                               animated:YES
-                             completion:nil];
-            
-            self.channelsList = nil;
-            [self.channels removeAllObjects];
-            
+
+    TWMChannels *channelsList = [[[IPMessagingManager sharedManager] client] channelsList];
+    if (channelsList) {
+        NSMutableOrderedSet *newChannels = [[NSMutableOrderedSet alloc] init];
+        [newChannels addObjectsFromArray:[channelsList allObjects]];
+        [self sortChannels:newChannels];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            self.channels = newChannels;
             [self.tableView reloadData];
-        }
-    }];
+        });
+    }
 }
 
 - (void)leaveChannel:(TWMChannel *)channel {
@@ -369,7 +345,10 @@
     TWMChannel *channel = [self channelForIndexPath:indexPath];
     
     if (channel.status == TWMChannelStatusJoined) {
-        [self performSegueWithIdentifier:@"viewChannel" sender:channel];
+        // synchronize will be a noop and call the completion immediately if the channel is ready
+        [channel synchronizeWithCompletion:^(TWMResult *result) {
+            [self performSegueWithIdentifier:@"viewChannel" sender:channel];
+        }];
     } else {
         [self displayOperationsForChannel:channel
                           calledFromSwipe:NO];
@@ -410,17 +389,23 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 
 #pragma mark - Internal methods
 
-- (void)sortChannels {
-    [self.channels sortUsingDescriptors:@[[[NSSortDescriptor alloc] initWithKey:@"friendlyName"
-                                                                      ascending:YES
-                                                                       selector:@selector(localizedCaseInsensitiveCompare:)]]];
+- (void)sortChannels:(NSMutableOrderedSet *)channels {
+    [channels sortUsingDescriptors:@[[[NSSortDescriptor alloc] initWithKey:@"friendlyName"
+                                                                 ascending:YES
+                                                                  selector:@selector(localizedCaseInsensitiveCompare:)]]];
 }
 
 #pragma mark - TwilioIPMessagingClientDelegate
 
+- (void)ipMessagingClient:(TwilioIPMessagingClient *)client synchronizationStatusChanged:(TWMClientSynchronizationStatus)status {
+    if (status == TWMClientSynchronizationStatusCompleted) {
+        [self populateChannels];
+    }
+}
+
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelAdded:(TWMChannel *)channel {
     [self.channels addObject:channel];
-    [self sortChannels];
+    [self sortChannels:self.channels];
     [self.tableView reloadData];
 }
 
