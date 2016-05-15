@@ -6,7 +6,9 @@
 //
 
 #import <UIKit/UIKit.h>
+
 #import <TwilioIPMessagingClient/TwilioIPMessagingClient.h>
+#import <TwilioCommon/TwilioCommon.h>
 
 @interface IPMessagingManager : NSObject
 
