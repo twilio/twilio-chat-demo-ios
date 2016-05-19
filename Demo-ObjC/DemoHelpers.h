@@ -23,4 +23,8 @@
                           size:(NSUInteger)size
                  scalingFactor:(CGFloat)scale;
 
++ (UIImage *)avatarForAuthor:(NSString *)author
+                        size:(NSUInteger)size
+               scalingFactor:(CGFloat)scale;
+
 @end

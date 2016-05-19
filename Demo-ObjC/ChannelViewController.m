@@ -354,14 +354,15 @@ static NSString * const kChannelDataData = @"channelDataData";
         TWMMember *author = [[self channel] memberWithIdentity:message.author];
         if (author) {
             messageCell.authorLabel.text = [DemoHelpers displayNameForMember:author];
+            messageCell.avatarImage.image = [DemoHelpers avatarForUserInfo:author.userInfo size:44.0 scalingFactor:2.0];
         } else {
             // original author may not exist anymore on channel, display the original username
             messageCell.authorLabel.text = message.author;
+            messageCell.avatarImage.image = [DemoHelpers avatarForAuthor:message.author size:44.0 scalingFactor:2.0];
         }
         [self.channel.messages advanceLastConsumedMessageIndex:message.index];
         messageCell.dateLabel.text = [DemoHelpers messageDisplayForDate:message.timestampAsDate];
         messageCell.bodyLabel.text = message.body;
-        messageCell.avatarImage.image = [DemoHelpers avatarForUserInfo:author.userInfo size:44.0 scalingFactor:2.0];
         if ([self isMe:author]) {
             messageCell.contentView.backgroundColor = [UIColor colorWithWhite:0.96f alpha:1.0f];
         } else {

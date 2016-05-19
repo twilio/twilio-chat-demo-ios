@@ -175,12 +175,25 @@
     return [formatter stringFromDate:date];
 }
 
++ (UIImage *)avatarForAuthor:(NSString *)author
+                        size:(NSUInteger)size
+               scalingFactor:(CGFloat)scale {
+    return [self avatarForEmail:nil identity:author size:size scalingFactor:scale];
+}
+
 + (UIImage *)avatarForUserInfo:(TWMUserInfo *)userInfo
                           size:(NSUInteger)size
                  scalingFactor:(CGFloat)scale {
     NSString *email = userInfo.attributes[@"email"];
     NSString *identity = userInfo.identity;
     
+    return [self avatarForEmail:email identity:identity size:size scalingFactor:scale];
+}
+
++ (UIImage *)avatarForEmail:(NSString *)email
+                   identity:(NSString *)identity
+                       size:(NSUInteger)size
+              scalingFactor:(CGFloat)scale {
     NSMutableDictionary *imageCache = [[self sharedInstance] imageCache];
     NSString *cacheKey = [NSString stringWithFormat:@"%@:%@", email, identity];
     UIImage *avatarImage = imageCache[cacheKey];
@@ -266,12 +279,17 @@
     [[UIBezierPath bezierPathWithRoundedRect:bounds
                                 cornerRadius:bounds.size.height / 2.0f] addClip];
     
-    unsigned char md5[CC_MD5_DIGEST_LENGTH];
-    [self md5ForString:identity output:md5];
-    UIColor *color = [UIColor colorWithRed:(md5[0] / 255.0)
-                                     green:(md5[1] / 255.0)
-                                      blue:(md5[2] / 255.0)
-                                     alpha:1.0f];
+    UIColor *color = nil;
+    if (identity) {
+        unsigned char md5[CC_MD5_DIGEST_LENGTH];
+        [self md5ForString:identity output:md5];
+        color = [UIColor colorWithRed:(md5[0] / 255.0)
+                                green:(md5[1] / 255.0)
+                                 blue:(md5[2] / 255.0)
+                                alpha:1.0f];
+    } else {
+        color = [UIColor colorWithWhite:0.9f alpha:1.0f];
+    }
     
     UIImage *twilioLogo = [UIImage imageNamed:@"user-44px"];
     twilioLogo = [twilioLogo imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
