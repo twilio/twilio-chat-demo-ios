@@ -17,10 +17,14 @@
 
 + (NSString *)displayNameForMember:(TWMMember *)member;
 
-+ (NSString *)messageDisplayForDateString:(NSString *)dateString;
++ (NSString *)messageDisplayForDate:(NSDate *)date;
 
 + (UIImage *)avatarForUserInfo:(TWMUserInfo *)userInfo
                           size:(NSUInteger)size
                  scalingFactor:(CGFloat)scale;
+
++ (UIImage *)avatarForAuthor:(NSString *)author
+                        size:(NSUInteger)size
+               scalingFactor:(CGFloat)scale;
 
 @end

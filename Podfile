@@ -1,3 +1,5 @@
 source 'https://github.com/twilio/cocoapod-specs'
 
-pod 'TwilioIPMessagingClient'
+target 'Demo-ObjC' do
+  pod 'TwilioIPMessagingClient'
+end

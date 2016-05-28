@@ -157,8 +157,7 @@
     return displayName;
 }
 
-+ (NSString *)messageDisplayForDateString:(NSString *)dateString {
-    NSDate *date = [self dateFromTimestampString:dateString];
++ (NSString *)messageDisplayForDate:(NSDate *)date {
     NSDateFormatter *formatter = nil;
     if ([[NSCalendar currentCalendar] isDateInToday:date]) {
         formatter = [self cachedDateFormatterWithKey:@"DemoDateFormatter-Today"
@@ -176,19 +175,10 @@
     return [formatter stringFromDate:date];
 }
 
-+ (NSDate *)dateFromTimestampString:(NSString *)timestamp {
-    NSDate *ret = nil;
-    
-    if (timestamp && ([timestamp length] > 0 )) {
-        NSDateFormatter *formatter = [self cachedDateFormatterWithKey:@"DemoDateFormatter"
-                                                          initializer:^(NSDateFormatter *formatter) {
-                                                              [formatter setDateFormat:@"yyyy'-'MM'-'dd'T'HH':'mm':'ss.SSSZ"];
-                                                          }];
-        
-        ret = [formatter dateFromString:timestamp];
-    }
-    
-    return ret;
++ (UIImage *)avatarForAuthor:(NSString *)author
+                        size:(NSUInteger)size
+               scalingFactor:(CGFloat)scale {
+    return [self avatarForEmail:nil identity:author size:size scalingFactor:scale];
 }
 
 + (UIImage *)avatarForUserInfo:(TWMUserInfo *)userInfo
@@ -197,6 +187,13 @@
     NSString *email = userInfo.attributes[@"email"];
     NSString *identity = userInfo.identity;
     
+    return [self avatarForEmail:email identity:identity size:size scalingFactor:scale];
+}
+
++ (UIImage *)avatarForEmail:(NSString *)email
+                   identity:(NSString *)identity
+                       size:(NSUInteger)size
+              scalingFactor:(CGFloat)scale {
     NSMutableDictionary *imageCache = [[self sharedInstance] imageCache];
     NSString *cacheKey = [NSString stringWithFormat:@"%@:%@", email, identity];
     UIImage *avatarImage = imageCache[cacheKey];
@@ -232,18 +229,23 @@
 }
 
 + (NSString *)md5ForString:(NSString *)input {
-    unsigned char md5[CC_MD5_DIGEST_LENGTH];
-    [self md5ForString:input output:md5];
-    NSMutableString *ret = [NSMutableString string];
-    for (int ndx=0; ndx < CC_MD5_DIGEST_LENGTH; ndx++) {
-        [ret appendFormat:@"%02x", md5[ndx]];
+    NSMutableString *ret = nil;
+    if (input) {
+        unsigned char md5[CC_MD5_DIGEST_LENGTH];
+        [self md5ForString:input output:md5];
+        ret = [NSMutableString string];
+        for (int ndx=0; ndx < CC_MD5_DIGEST_LENGTH; ndx++) {
+            [ret appendFormat:@"%02x", md5[ndx]];
+        }
     }
     return ret;
 }
 
 + (void)md5ForString:(NSString *)input output:(unsigned char *)output {
-    const char *inputCString = [input UTF8String];
-    CC_MD5(inputCString, (CC_LONG)strlen(inputCString), output);
+    if (input) {
+        const char *inputCString = [input UTF8String];
+        CC_MD5(inputCString, (CC_LONG)strlen(inputCString), output);
+    }
 }
 
 + (UIImage *)gravatarForEmail:(NSString *)email
@@ -277,12 +279,17 @@
     [[UIBezierPath bezierPathWithRoundedRect:bounds
                                 cornerRadius:bounds.size.height / 2.0f] addClip];
     
-    unsigned char md5[CC_MD5_DIGEST_LENGTH];
-    [self md5ForString:identity output:md5];
-    UIColor *color = [UIColor colorWithRed:(md5[0] / 255.0)
-                                     green:(md5[1] / 255.0)
-                                      blue:(md5[2] / 255.0)
-                                     alpha:1.0f];
+    UIColor *color = nil;
+    if (identity) {
+        unsigned char md5[CC_MD5_DIGEST_LENGTH];
+        [self md5ForString:identity output:md5];
+        color = [UIColor colorWithRed:(md5[0] / 255.0)
+                                green:(md5[1] / 255.0)
+                                 blue:(md5[2] / 255.0)
+                                alpha:1.0f];
+    } else {
+        color = [UIColor colorWithWhite:0.9f alpha:1.0f];
+    }
     
     UIImage *twilioLogo = [UIImage imageNamed:@"user-44px"];
     twilioLogo = [twilioLogo imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
