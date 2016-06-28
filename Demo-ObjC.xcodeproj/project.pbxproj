@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		58083A531D20635A008ECE1E /* ReactionsView.m in Sources */ = {isa = PBXBuildFile; fileRef = 58083A521D20635A008ECE1E /* ReactionsView.m */; };
+		58083A591D22D84A008ECE1E /* UserListViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 58083A581D22D84A008ECE1E /* UserListViewController.m */; };
 		581B5C8B1C7FC8A800F16460 /* SeenByTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 581B5C8A1C7FC8A800F16460 /* SeenByTableViewCell.m */; };
 		58223ABD1B69571C00F0DF97 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 58223ABC1B69571C00F0DF97 /* main.m */; };
 		58223AC01B69571C00F0DF97 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 58223ABF1B69571C00F0DF97 /* AppDelegate.m */; };
@@ -16,6 +18,7 @@
 		58223ACB1B69571C00F0DF97 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 58223AC91B69571C00F0DF97 /* LaunchScreen.xib */; };
 		58223B4C1B6AA07600F0DF97 /* libc++.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 58223B4B1B6AA07600F0DF97 /* libc++.dylib */; };
 		583D81461B6FA82E00BF3C56 /* ChannelTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 583D81451B6FA82E00BF3C56 /* ChannelTableViewCell.m */; };
+		584C05901D204EA000F0DBC9 /* ReactionView.m in Sources */ = {isa = PBXBuildFile; fileRef = 584C058F1D204EA000F0DBC9 /* ReactionView.m */; };
 		58652D051BC5BBC800250FEA /* MemberTypingTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 58652D041BC5BBC800250FEA /* MemberTypingTableViewCell.m */; };
 		58D509101B7B78D20093B5F1 /* ChannelViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 58D5090F1B7B78D20093B5F1 /* ChannelViewController.m */; };
 		58D509131B7B7AF00093B5F1 /* MessageTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 58D509121B7B7AF00093B5F1 /* MessageTableViewCell.m */; };
@@ -25,6 +28,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		58083A511D20635A008ECE1E /* ReactionsView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ReactionsView.h; sourceTree = "<group>"; };
+		58083A521D20635A008ECE1E /* ReactionsView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ReactionsView.m; sourceTree = "<group>"; };
+		58083A571D22D84A008ECE1E /* UserListViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UserListViewController.h; sourceTree = "<group>"; };
+		58083A581D22D84A008ECE1E /* UserListViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UserListViewController.m; sourceTree = "<group>"; };
 		581B5C891C7FC8A800F16460 /* SeenByTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SeenByTableViewCell.h; sourceTree = "<group>"; };
 		581B5C8A1C7FC8A800F16460 /* SeenByTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SeenByTableViewCell.m; sourceTree = "<group>"; };
 		58223AB71B69571C00F0DF97 /* Demo-ObjC.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Demo-ObjC.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -40,6 +47,8 @@
 		58223B4B1B6AA07600F0DF97 /* libc++.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libc++.dylib"; path = "usr/lib/libc++.dylib"; sourceTree = SDKROOT; };
 		583D81441B6FA82E00BF3C56 /* ChannelTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ChannelTableViewCell.h; sourceTree = "<group>"; };
 		583D81451B6FA82E00BF3C56 /* ChannelTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ChannelTableViewCell.m; sourceTree = "<group>"; };
+		584C058E1D204EA000F0DBC9 /* ReactionView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ReactionView.h; sourceTree = "<group>"; };
+		584C058F1D204EA000F0DBC9 /* ReactionView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ReactionView.m; sourceTree = "<group>"; };
 		58652D031BC5BBC800250FEA /* MemberTypingTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MemberTypingTableViewCell.h; sourceTree = "<group>"; };
 		58652D041BC5BBC800250FEA /* MemberTypingTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MemberTypingTableViewCell.m; sourceTree = "<group>"; };
 		58D5090E1B7B78D20093B5F1 /* ChannelViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ChannelViewController.h; sourceTree = "<group>"; };
@@ -110,6 +119,12 @@
 				58FB4B1F1B8E5A8800DDF5B8 /* DemoHelpers.m */,
 				58F878441BCDA8930097F014 /* IPMessagingManager.h */,
 				58F878451BCDA8930097F014 /* IPMessagingManager.m */,
+				584C058E1D204EA000F0DBC9 /* ReactionView.h */,
+				584C058F1D204EA000F0DBC9 /* ReactionView.m */,
+				58083A511D20635A008ECE1E /* ReactionsView.h */,
+				58083A521D20635A008ECE1E /* ReactionsView.m */,
+				58083A571D22D84A008ECE1E /* UserListViewController.h */,
+				58083A581D22D84A008ECE1E /* UserListViewController.m */,
 			);
 			path = "Demo-ObjC";
 			sourceTree = "<group>";
@@ -197,13 +212,16 @@
 				581B5C8B1C7FC8A800F16460 /* SeenByTableViewCell.m in Sources */,
 				58223AC31B69571C00F0DF97 /* ChannelListViewController.m in Sources */,
 				58D509101B7B78D20093B5F1 /* ChannelViewController.m in Sources */,
+				58083A531D20635A008ECE1E /* ReactionsView.m in Sources */,
 				583D81461B6FA82E00BF3C56 /* ChannelTableViewCell.m in Sources */,
 				58F878431BCD75450097F014 /* LoginViewController.m in Sources */,
 				58652D051BC5BBC800250FEA /* MemberTypingTableViewCell.m in Sources */,
 				58223AC01B69571C00F0DF97 /* AppDelegate.m in Sources */,
 				58223ABD1B69571C00F0DF97 /* main.m in Sources */,
+				584C05901D204EA000F0DBC9 /* ReactionView.m in Sources */,
 				58D509131B7B7AF00093B5F1 /* MessageTableViewCell.m in Sources */,
 				58F878461BCDA8930097F014 /* IPMessagingManager.m in Sources */,
+				58083A591D22D84A008ECE1E /* UserListViewController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

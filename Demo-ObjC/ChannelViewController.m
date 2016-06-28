@@ -11,6 +11,8 @@
 #import "SeenByTableViewCell.h"
 #import "DemoHelpers.h"
 #import "IPMessagingManager.h"
+#import "ReactionView.h"
+#import "UserListViewController.h"
 
 static NSString * const kChannelDataType = @"channelDataType";
 static NSString * const kChannelDataTypeMessage = @"message";
@@ -19,7 +21,7 @@ static NSString * const kChannelDataTypeUserConsumption = @"userConsumption";
 static NSString * const kChannelDataTypeMembersTyping = @"membersTyping";
 static NSString * const kChannelDataData = @"channelDataData";
 
-@interface ChannelViewController () <UITableViewDataSource, UITableViewDelegate, TWMChannelDelegate, UITextFieldDelegate>
+@interface ChannelViewController () <UITableViewDataSource, UITableViewDelegate, TWMChannelDelegate, UITextFieldDelegate, UIPopoverPresentationControllerDelegate, MessageTableViewCellDelegate>
 @property (nonatomic, weak) IBOutlet UITableView *tableView;
 @property (weak, nonatomic) IBOutlet UITextField *messageInput;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *keyboardAdjustmentConstraint;
@@ -87,12 +89,15 @@ static NSString * const kChannelDataData = @"channelDataData";
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    // Do any additional setup after loading the view.
     
     self.tableView.rowHeight = UITableViewAutomaticDimension;
     self.tableView.estimatedRowHeight = 88.0f;
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
     self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+
+    UILongPressGestureRecognizer *longPress = [UILongPressGestureRecognizer new];
+    [longPress addTarget:self action:@selector(messageActions:)];
+    [self.tableView addGestureRecognizer:longPress];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -157,7 +162,46 @@ static NSString * const kChannelDataData = @"channelDataData";
     [self updateChannel];
 }
 
-- (IBAction)performAction:(id)sender {
+- (void)messageActions:(UIGestureRecognizer *)gestureRecognizer {
+    if (gestureRecognizer.state != UIGestureRecognizerStateBegan) {
+        return;
+    }
+
+    CGPoint point = [gestureRecognizer locationInView:self.tableView];
+    NSIndexPath *indexPath = [self.tableView indexPathForRowAtPoint:point];
+    TWMMessage *message = [self messageForIndexPath:indexPath];
+
+    UIAlertController *actionsSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    
+    __weak __typeof(self) weakSelf = self;
+    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Edit Message"
+                                                     style:UIAlertActionStyleDefault
+                                                   handler:^(UIAlertAction *action) {
+                                                       [weakSelf changeMessage:message];
+                                                   }]];
+    
+    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Add Reaction"
+                                                     style:UIAlertActionStyleDefault
+                                                   handler:^(UIAlertAction *action) {
+                                                       [weakSelf addReactionToMessage:message];
+                                                   }]];
+    
+    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Delete Message"
+                                                     style:UIAlertActionStyleDefault
+                                                   handler:^(UIAlertAction *action) {
+                                                       [weakSelf destroyMessage:message];
+                                                   }]];
+    
+    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Cancel"
+                                                     style:UIAlertActionStyleCancel
+                                                   handler:nil]];
+    
+    [self presentViewController:actionsSheet
+                       animated:YES
+                     completion:nil];
+}
+
+- (IBAction)channelActions:(id)sender {
     UIAlertController *actionsSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     
     __weak __typeof(self) weakSelf = self;
@@ -351,23 +395,12 @@ static NSString * const kChannelDataData = @"channelDataData";
     } else if ([data[kChannelDataType] isEqualToString:kChannelDataTypeMessage]) {
         MessageTableViewCell *messageCell = [tableView dequeueReusableCellWithIdentifier:@"message"];
         TWMMessage *message = data[kChannelDataData];
-        TWMMember *author = [[self channel] memberWithIdentity:message.author];
-        if (author) {
-            messageCell.authorLabel.text = [DemoHelpers displayNameForMember:author];
-            messageCell.avatarImage.image = [DemoHelpers avatarForUserInfo:author.userInfo size:44.0 scalingFactor:2.0];
-        } else {
-            // original author may not exist anymore on channel, display the original username
-            messageCell.authorLabel.text = message.author;
-            messageCell.avatarImage.image = [DemoHelpers avatarForAuthor:message.author size:44.0 scalingFactor:2.0];
-        }
+
+        messageCell.channel = self.channel;
+        messageCell.message = message;
+        messageCell.delegate = self;
+        
         [self.channel.messages advanceLastConsumedMessageIndex:message.index];
-        messageCell.dateLabel.text = [DemoHelpers messageDisplayForDate:message.timestampAsDate];
-        messageCell.bodyLabel.text = message.body;
-        if ([self isMe:author]) {
-            messageCell.contentView.backgroundColor = [UIColor colorWithWhite:0.96f alpha:1.0f];
-        } else {
-            messageCell.contentView.backgroundColor = [UIColor whiteColor];
-        }
         [messageCell layoutIfNeeded];
         
         cell = messageCell;
@@ -380,39 +413,6 @@ static NSString * const kChannelDataData = @"channelDataData";
 
 - (BOOL)tableView:(UITableView *)tableView shouldHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
     return NO;
-}
-- (NSArray *)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(NSIndexPath *)indexPath {
-    NSMutableArray *actions = [NSMutableArray array];
-    TWMMessage *message = [self messageForIndexPath:indexPath];
-    
-    if (!message) {
-        return @[];
-    }
-    
-    __weak __typeof(self) weakSelf = self;
-    [actions addObject:[UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive
-                                                          title:@"Destroy"
-                                                        handler:^(UITableViewRowAction *action, NSIndexPath *indexPath) {
-                                                            weakSelf.tableView.editing = NO;
-                                                            [self destroyMessage:message];
-                                                        }]];
-    
-    [actions addObject:[UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleNormal
-                                                          title:@"Edit"
-                                                        handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
-                                                            [self changeMessage:message];
-                                                        }]];
-    
-    return actions;
-}
-
-- (void)tableView:(UITableView *)tableView
-commitEditingStyle:(UITableViewCellEditingStyle)editingStyle
-forRowAtIndexPath:(NSIndexPath *)indexPath {
-    if (editingStyle == UITableViewCellEditingStyleDelete) {
-        TWMMessage *message = [self messageForIndexPath:indexPath];
-        [self destroyMessage:message];
-    }
 }
 
 #pragma mark - UITextFieldDelegate
@@ -618,6 +618,35 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
                        action:action];
 }
 
+- (void)addReactionToMessage:(TWMMessage *)message {
+    UIAlertController *actionsSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    
+    void (^addReaction)(NSString *) = ^(NSString *emojiString) {
+        [DemoHelpers reactionIncrement:emojiString
+                               message:message
+                                  user:[[[IPMessagingManager sharedManager] client] userInfo].identity];
+    };
+    
+    NSDictionary *emoji = [ReactionView emojis];
+    for (NSString *emojiString in [emoji allKeys]) {
+        NSString *name = [ReactionView friendlyNameForEmoji:emojiString];
+        NSString *label = [NSString stringWithFormat:@"%@ - %@", emoji[emojiString], name];
+        [actionsSheet addAction:[UIAlertAction actionWithTitle:label
+                                                         style:UIAlertActionStyleDefault
+                                                       handler:^(UIAlertAction *action) {
+                                                           addReaction(emojiString);
+                                                       }]];
+    }
+    
+    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Cancel"
+                                                     style:UIAlertActionStyleCancel
+                                                   handler:nil]];
+    
+    [self presentViewController:actionsSheet
+                       animated:YES
+                     completion:nil];
+}
+
 - (void)inviteMember {
     NSString *title = @"Invite";
     NSString *placeholder = @"User To Invite";
@@ -683,8 +712,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (void)listMembers {
-    NSString *membersList = [self pluralizeListOfMembers:self.channel.members.allObjects];
-    [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"Members:\n%@", membersList] inView:self.view];
+    [self displayUsersList:self.channel.members.allObjects caption:@"Channel Members"];
 }
 
 - (void)leaveChannel {
@@ -852,6 +880,40 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     return ([member userInfo] == [[[IPMessagingManager sharedManager] client] userInfo]);
 }
 
+- (void)displayUsersList:(NSArray *)users caption:(NSString *)caption {
+    UINavigationController *navigationController = [self.storyboard instantiateViewControllerWithIdentifier:@"usersList"];
+    navigationController.modalPresentationStyle = UIModalPresentationPopover;
+    navigationController.preferredContentSize = CGSizeMake(
+                                                           self.tableView.frame.size.width * 0.9,
+                                                           self.tableView.frame.size.height * 0.5
+                                                           );
+
+    UIPopoverPresentationController *popoverController = navigationController.popoverPresentationController;
+    popoverController.delegate = self;
+    popoverController.sourceView = self.view;
+    popoverController.sourceRect = (CGRect){
+        .origin = self.tableView.center,
+        .size = CGSizeZero
+    };
+    popoverController.permittedArrowDirections = 0;
+    navigationController.navigationBarHidden = YES;
+
+    UserListViewController *userListController = (UserListViewController *)navigationController.topViewController;
+    userListController.users = users;
+    userListController.caption = caption;
+    [self presentViewController:navigationController
+                       animated:YES
+                     completion:^{
+                         
+                     }];
+}
+
+#pragma mark - UIPopoverPresentationControllerDelegate
+
+- (UIModalPresentationStyle)adaptivePresentationStyleForPresentationController:(UIPresentationController *)controller {
+    return UIModalPresentationNone;
+}
+
 #pragma mark - TMChannelDelegate
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
@@ -941,6 +1003,68 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     if ([self isNearBottom]) {
         [self scrollToBottomMessage];
     }
+}
+
+#pragma mark - MessageTableViewCellDelegate
+
+- (void)reactionIncremented:(NSString *)emojiString
+                    message:(TWMMessage *)message {
+    [DemoHelpers reactionIncrement:emojiString
+                           message:message
+                              user:self.localIdentity];
+}
+
+- (void)reactionDecremented:(NSString *)emojiString
+                    message:(TWMMessage *)message {
+    [DemoHelpers reactionDecrement:emojiString
+                           message:message
+                              user:self.localIdentity];
+}
+
+- (void)showUsersForReaction:(NSString *)emojiString
+                     message:(TWMMessage *)message {
+    NSDictionary *attributes = message.attributes;
+    if (!attributes) {
+        return;
+    }
+    
+    NSArray *reactions = attributes[@"reactions"];
+    if (!reactions) {
+        return;
+    }
+    
+    NSDictionary *reaction = nil;
+    for (NSDictionary *reactionCandidate in reactions) {
+        if ([reactionCandidate[@"reaction"] isEqualToString:emojiString]) {
+            reaction = reactionCandidate;
+            break;
+        }
+    }
+    if (!reaction) {
+        return;
+    }
+
+    NSArray *users = [self membersListFromIdentities:reaction[@"users"]];
+    NSString *caption = [NSString stringWithFormat:@"%@ Reactions", [ReactionView emojis][emojiString]];
+    [self displayUsersList:users caption:caption];
+}
+
+- (NSArray *)membersListFromIdentities:(NSArray *)identities {
+    NSMutableArray *ret = [NSMutableArray array];
+    for (NSString *identity in identities) {
+        TWMMember *member = [self.channel memberWithIdentity:identity];
+        if (member) {
+            [ret addObject:member];
+        } else {
+            [ret addObject:identity];
+        }
+    }
+    return ret;
+}
+
+- (NSString *)localIdentity {
+    TWMUserInfo *localUserInfo = [[[IPMessagingManager sharedManager] client] userInfo];
+    return localUserInfo.identity;
 }
 
 @end

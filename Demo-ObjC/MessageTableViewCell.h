@@ -6,12 +6,23 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <TwilioIPMessagingClient/TwilioIPMessagingClient.h>
+
+@protocol MessageTableViewCellDelegate;
 
 @interface MessageTableViewCell : UITableViewCell
 
-@property (nonatomic, weak) IBOutlet UILabel *authorLabel;
-@property (nonatomic, weak) IBOutlet UILabel *dateLabel;
-@property (nonatomic, weak) IBOutlet UILabel *bodyLabel;
-@property (nonatomic, weak) IBOutlet UIImageView *avatarImage;
+@property (nonatomic, strong) TWMChannel *channel;
+@property (nonatomic, strong) TWMMessage *message;
+@property (nonatomic, assign) id<MessageTableViewCellDelegate> delegate;
 
+@end
+
+@protocol MessageTableViewCellDelegate <NSObject>
+- (void)reactionIncremented:(NSString *)emojiString
+                    message:(TWMMessage *)message;
+- (void)reactionDecremented:(NSString *)emojiString
+                    message:(TWMMessage *)message;
+- (void)showUsersForReaction:(NSString *)emojiString
+                     message:(TWMMessage *)message;
 @end

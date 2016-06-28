@@ -222,6 +222,55 @@
     return avatarImage;
 }
 
++ (NSMutableDictionary *)deepMutableCopyOfDictionary:(NSDictionary *)dictionary {
+    return (NSMutableDictionary *)CFBridgingRelease(CFPropertyListCreateDeepCopy(kCFAllocatorDefault,
+                                                                                 (CFDictionaryRef)dictionary,
+                                                                                 kCFPropertyListMutableContainers));
+}
+
++ (void)reactionIncrement:(NSString *)emojiString message:(TWMMessage *)message user:(NSString *)identity {
+    NSMutableDictionary *attributes = [DemoHelpers deepMutableCopyOfDictionary:message.attributes];
+    if (!attributes) {
+        attributes = [NSMutableDictionary dictionary];
+    }
+    NSMutableDictionary *reactionDict = [DemoHelpers reactionDictForReaction:emojiString inAttributes:attributes];
+    
+    if (![reactionDict[@"users"] containsObject:identity]) {
+        [reactionDict[@"users"] addObject:identity];
+        
+        [message setAttributes:attributes
+                    completion:^(TWMResult *result) {
+                        if (!result.isSuccessful) {
+                            NSLog(@"error occurred incrementing reaction: %@", emojiString);
+                        }
+                    }];
+    }
+}
+
++ (void)reactionDecrement:(NSString *)emojiString message:(TWMMessage *)message user:(NSString *)identity {
+    NSMutableDictionary *attributes = [DemoHelpers deepMutableCopyOfDictionary:message.attributes];
+    if (!attributes) {
+        attributes = [NSMutableDictionary dictionary];
+    }
+    NSMutableDictionary *reactionDict = [DemoHelpers reactionDictForReaction:emojiString inAttributes:attributes];
+    NSMutableArray *users = reactionDict[@"users"];
+    
+    if ([users containsObject:identity]) {
+        [users removeObject:identity];
+        
+        if (users.count == 0) {
+            [attributes[@"reactions"] removeObject:reactionDict];
+        }
+        
+        [message setAttributes:attributes
+                    completion:^(TWMResult *result) {
+                        if (!result.isSuccessful) {
+                            NSLog(@"error occurred decrementing reaction: %@", emojiString);
+                        }
+                    }];
+    }
+}
+
 #pragma mark - Internal helper methods
 
 + (NSDateFormatter *)cachedDateFormatterWithKey:(NSString *)cacheKey
@@ -332,6 +381,31 @@
     UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
     return image;
+}
+
++ (NSMutableDictionary *)reactionDictForReaction:(NSString *)emojiString inAttributes:(NSMutableDictionary *)attributes {
+    NSMutableArray *reactions = attributes[@"reactions"];
+    if (!reactions) {
+        reactions = [NSMutableArray array];
+        attributes[@"reactions"] = reactions;
+    }
+    NSMutableDictionary *reactionDict = nil;
+    for (NSMutableDictionary *reactionDictCandidate in reactions) {
+        if ([reactionDictCandidate[@"reaction"] isEqualToString:emojiString]) {
+            reactionDict = reactionDictCandidate;
+            break;
+        }
+    }
+    
+    if (!reactionDict) {
+        reactionDict = [@{
+                          @"reaction": emojiString,
+                          @"users": [NSMutableArray array]
+                          } mutableCopy];
+        [reactions addObject:reactionDict];
+    }
+    
+    return reactionDict;
 }
 
 @end
