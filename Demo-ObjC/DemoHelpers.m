@@ -187,7 +187,15 @@
     NSString *email = userInfo.attributes[@"email"];
     NSString *identity = userInfo.identity;
     
-    return [self avatarForEmail:email identity:identity size:size scalingFactor:scale];
+    UIImage *image = [self avatarForEmail:email identity:identity size:size scalingFactor:scale];
+    
+    if (userInfo.isOnline) {
+        image = [self addIndicatorToAvatar:image color:[UIColor greenColor]];
+    } else if (userInfo.isNotifiable) {
+        image = [self addIndicatorToAvatar:image color:[UIColor lightGrayColor]];
+    }
+    
+    return image;
 }
 
 + (UIImage *)avatarForEmail:(NSString *)email
@@ -309,6 +317,21 @@
     avatarImage = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
     return avatarImage;
+}
+
++ (UIImage *)addIndicatorToAvatar:(UIImage *)sourceImage color:(UIColor *)color {
+    UIGraphicsBeginImageContextWithOptions(sourceImage.size, NO, sourceImage.scale);
+
+    UIBezierPath *indicator = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(1, 1, 5, 5)
+                                                           cornerRadius:sourceImage.size.height / 2.0f];
+    [color setFill];
+    [indicator fill];
+
+    [sourceImage drawAtPoint:CGPointMake(0, 0)];
+
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return image;
 }
 
 @end
