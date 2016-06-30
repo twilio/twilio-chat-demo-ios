@@ -31,6 +31,8 @@ static NSString * const kChannelDataData = @"channelDataData";
 @property (nonatomic, strong) NSMutableArray *typingUsers;
 @property (nonatomic, copy) NSNumber *userConsumedIndex;
 @property (nonatomic, strong) NSDictionary<NSNumber *, NSArray<TWMMember *> *> *seenBy;
+
+@property (nonatomic, strong) NSMutableDictionary<NSIndexPath *, NSNumber *> *cachedHeights;
 @end
 
 @implementation ChannelViewController
@@ -54,6 +56,7 @@ static NSString * const kChannelDataData = @"channelDataData";
 - (void)sharedInit {
     self.messages = [[NSMutableOrderedSet alloc] init];
     self.typingUsers = [NSMutableArray array];
+    self.cachedHeights = [NSMutableDictionary dictionary];
 }
 
 - (void)updateChannel {
@@ -411,8 +414,30 @@ static NSString * const kChannelDataData = @"channelDataData";
 
 #pragma mark - UITableViewDelegate
 
-- (BOOL)tableView:(UITableView *)tableView shouldHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+- (BOOL)tableView:(UITableView *)tableView
+shouldHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
     return NO;
+}
+
+- (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
+    self.cachedHeights[indexPath] = @(cell.frame.size.height);
+}
+
+- (void)tableView:(UITableView *)tableView
+didEndDisplayingCell:(UITableViewCell *)cell
+forRowAtIndexPath:(NSIndexPath *)indexPath {
+    [self.cachedHeights removeObjectForKey:indexPath];
+}
+
+- (CGFloat)tableView:(UITableView *)tableView
+estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    CGFloat height = tableView.estimatedRowHeight;
+    NSNumber *cachedHeight = self.cachedHeights[indexPath];
+    if (cachedHeight) {
+        height = [cachedHeight floatValue];
+    }
+    
+    return height;
 }
 
 #pragma mark - UITextFieldDelegate
@@ -954,8 +979,17 @@ static NSString * const kChannelDataData = @"channelDataData";
                   updated:(TWMUserInfoUpdate)updated {
     if (updated == TWMUserInfoUpdateFriendlyName) {
         [self rebuildData];
-    } else if (updated == TWMUserInfoUpdateAttributes) {
-        [self.tableView reloadData];
+    } else if (updated == TWMUserInfoUpdateAttributes ||
+               updated == TWMUserInfoUpdateReachabilityOnline ||
+               updated == TWMUserInfoUpdateReachabilityNotifiable) {
+        NSMutableArray *pathsToUpdate = [NSMutableArray array];
+        for (NSIndexPath *indexPath in self.tableView.indexPathsForVisibleRows) {
+            if ([[self messageForIndexPath:indexPath].author isEqualToString:member.userInfo.identity]) {
+                [pathsToUpdate addObject:indexPath];
+            }
+        }
+        [self.tableView reloadRowsAtIndexPaths:pathsToUpdate
+                              withRowAnimation:UITableViewRowAnimationFade];
     }
 }
 
