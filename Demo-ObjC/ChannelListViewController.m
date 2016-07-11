@@ -149,6 +149,11 @@
                                                                      preferredStyle:UIAlertControllerStyleActionSheet];
 
     if (channel.status == TWMChannelStatusJoined) {
+        [channelActions addAction:[UIAlertAction actionWithTitle:@"Set No Messages Consumed"
+                                                           style:UIAlertActionStyleDefault
+                                                         handler:^(UIAlertAction *action) {
+                                                             [weakSelf setNoMessagesConsumed:channel];
+                                                         }]];
         [channelActions addAction:[UIAlertAction actionWithTitle:@"Leave"
                                                            style:UIAlertActionStyleDefault
                                                          handler:^(UIAlertAction *action) {
@@ -212,6 +217,18 @@
             [self.tableView reloadData];
         });
     }
+}
+
+- (void)setNoMessagesConsumed:(TWMChannel *)channel {
+    [channel synchronizeWithCompletion:^(TWMResult *result) {
+        if ([result isSuccessful]) {
+            [channel.messages setNoMessagesConsumed];
+        } else {
+            [DemoHelpers displayToastWithMessage:@"Set no messages consumed failed."
+                                          inView:self.view];
+            NSLog(@"%s: %@", __FUNCTION__, result.error);
+        }
+    }];
 }
 
 - (void)leaveChannel:(TWMChannel *)channel {
