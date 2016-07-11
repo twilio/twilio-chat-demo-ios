@@ -118,7 +118,7 @@
 
 - (void)setCount:(NSUInteger)count {
     _count = count;
-    self.countLabel.text = [NSString stringWithFormat:@"%ld", self.count];
+    self.countLabel.text = [NSString stringWithFormat:@"%ld", (unsigned long)self.count];
     [self setNeedsLayout];
 }
 
