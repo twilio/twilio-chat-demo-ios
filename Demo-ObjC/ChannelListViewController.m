@@ -70,6 +70,7 @@
     UIAlertController *newChannelActionSheet = [UIAlertController alertControllerWithTitle:@"New Channel"
                                                                                    message:nil
                                                                             preferredStyle:UIAlertControllerStyleActionSheet];
+    [self configurePopoverPresentationController:newChannelActionSheet.popoverPresentationController];
 
     [newChannelActionSheet addAction:[UIAlertAction actionWithTitle:@"Public Channel"
                                                               style:UIAlertActionStyleDefault
@@ -147,6 +148,7 @@
     UIAlertController *channelActions = [UIAlertController alertControllerWithTitle:@"Channel"
                                                                             message:nil
                                                                      preferredStyle:UIAlertControllerStyleActionSheet];
+    [self configurePopoverPresentationController:channelActions.popoverPresentationController];
 
     if (channel.status == TWMChannelStatusJoined) {
         [channelActions addAction:[UIAlertAction actionWithTitle:@"Set No Messages Consumed"
@@ -410,6 +412,15 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     [channels sortUsingDescriptors:@[[[NSSortDescriptor alloc] initWithKey:@"friendlyName"
                                                                  ascending:YES
                                                                   selector:@selector(localizedCaseInsensitiveCompare:)]]];
+}
+
+- (void)configurePopoverPresentationController:(UIPopoverPresentationController *)popoverPresentationController {
+    popoverPresentationController.sourceView = self.view;
+    popoverPresentationController.sourceRect = (CGRect){
+        .origin = self.tableView.center,
+        .size = CGSizeZero
+    };
+    popoverPresentationController.permittedArrowDirections = 0;
 }
 
 #pragma mark - TwilioIPMessagingClientDelegate

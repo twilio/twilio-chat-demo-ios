@@ -175,7 +175,8 @@ static NSString * const kChannelDataData = @"channelDataData";
     TWMMessage *message = [self messageForIndexPath:indexPath];
 
     UIAlertController *actionsSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-    
+    [self configurePopoverPresentationController:actionsSheet.popoverPresentationController];
+
     __weak __typeof(self) weakSelf = self;
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Edit Message"
                                                      style:UIAlertActionStyleDefault
@@ -206,7 +207,8 @@ static NSString * const kChannelDataData = @"channelDataData";
 
 - (IBAction)channelActions:(id)sender {
     UIAlertController *actionsSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-    
+    [self configurePopoverPresentationController:actionsSheet.popoverPresentationController];
+
     __weak __typeof(self) weakSelf = self;
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Channel Friendly Name"
                                                      style:UIAlertActionStyleDefault
@@ -645,6 +647,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 
 - (void)addReactionToMessage:(TWMMessage *)message {
     UIAlertController *actionsSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    [self configurePopoverPresentationController:actionsSheet.popoverPresentationController];
     
     void (^addReaction)(NSString *) = ^(NSString *emojiString) {
         [DemoHelpers reactionIncrement:emojiString
@@ -931,6 +934,15 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
                      completion:^{
                          
                      }];
+}
+
+- (void)configurePopoverPresentationController:(UIPopoverPresentationController *)popoverPresentationController {
+    popoverPresentationController.sourceView = self.view;
+    popoverPresentationController.sourceRect = (CGRect){
+        .origin = self.tableView.center,
+        .size = CGSizeZero
+    };
+    popoverPresentationController.permittedArrowDirections = 0;
 }
 
 #pragma mark - UIPopoverPresentationControllerDelegate
