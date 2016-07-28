@@ -27,4 +27,10 @@
                         size:(NSUInteger)size
                scalingFactor:(CGFloat)scale;
 
++ (NSMutableDictionary *)deepMutableCopyOfDictionary:(NSDictionary *)dictionary;
+
++ (void)reactionIncrement:(NSString *)emojiString message:(TWMMessage *)message user:(NSString *)identity;
+
++ (void)reactionDecrement:(NSString *)emojiString message:(TWMMessage *)message user:(NSString *)identity;
+
 @end

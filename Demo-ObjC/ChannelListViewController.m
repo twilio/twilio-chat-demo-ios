@@ -70,6 +70,7 @@
     UIAlertController *newChannelActionSheet = [UIAlertController alertControllerWithTitle:@"New Channel"
                                                                                    message:nil
                                                                             preferredStyle:UIAlertControllerStyleActionSheet];
+    [self configurePopoverPresentationController:newChannelActionSheet.popoverPresentationController];
 
     [newChannelActionSheet addAction:[UIAlertAction actionWithTitle:@"Public Channel"
                                                               style:UIAlertActionStyleDefault
@@ -147,8 +148,14 @@
     UIAlertController *channelActions = [UIAlertController alertControllerWithTitle:@"Channel"
                                                                             message:nil
                                                                      preferredStyle:UIAlertControllerStyleActionSheet];
+    [self configurePopoverPresentationController:channelActions.popoverPresentationController];
 
     if (channel.status == TWMChannelStatusJoined) {
+        [channelActions addAction:[UIAlertAction actionWithTitle:@"Set No Messages Consumed"
+                                                           style:UIAlertActionStyleDefault
+                                                         handler:^(UIAlertAction *action) {
+                                                             [weakSelf setNoMessagesConsumed:channel];
+                                                         }]];
         [channelActions addAction:[UIAlertAction actionWithTitle:@"Leave"
                                                            style:UIAlertActionStyleDefault
                                                          handler:^(UIAlertAction *action) {
@@ -212,6 +219,18 @@
             [self.tableView reloadData];
         });
     }
+}
+
+- (void)setNoMessagesConsumed:(TWMChannel *)channel {
+    [channel synchronizeWithCompletion:^(TWMResult *result) {
+        if ([result isSuccessful]) {
+            [channel.messages setNoMessagesConsumed];
+        } else {
+            [DemoHelpers displayToastWithMessage:@"Set no messages consumed failed."
+                                          inView:self.view];
+            NSLog(@"%s: %@", __FUNCTION__, result.error);
+        }
+    }];
 }
 
 - (void)leaveChannel:(TWMChannel *)channel {
@@ -393,6 +412,15 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     [channels sortUsingDescriptors:@[[[NSSortDescriptor alloc] initWithKey:@"friendlyName"
                                                                  ascending:YES
                                                                   selector:@selector(localizedCaseInsensitiveCompare:)]]];
+}
+
+- (void)configurePopoverPresentationController:(UIPopoverPresentationController *)popoverPresentationController {
+    popoverPresentationController.sourceView = self.view;
+    popoverPresentationController.sourceRect = (CGRect){
+        .origin = self.tableView.center,
+        .size = CGSizeZero
+    };
+    popoverPresentationController.permittedArrowDirections = 0;
 }
 
 #pragma mark - TwilioIPMessagingClientDelegate
