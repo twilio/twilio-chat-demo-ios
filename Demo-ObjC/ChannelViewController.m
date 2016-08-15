@@ -339,7 +339,7 @@ static NSString * const kChannelDataData = @"channelDataData";
         
         for (NSNumber *consumptionIndex in consumptionKeys) {
             TWMMessage *consumptionMessage = [[[self channel] messages] messageForConsumptionIndex:consumptionIndex];
-            if (consumptionMessage) {
+            if (consumptionMessage && [newData containsObject:consumptionMessage]) { // messages list may have been updated since our snapshot in newData
                 NSUInteger ndx = [newData indexOfObject:consumptionMessage];
                 [newData insertObject:@{
                                         kChannelDataType: kChannelDataTypeMemberConsumption,
