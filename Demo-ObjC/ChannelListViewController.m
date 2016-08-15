@@ -151,6 +151,11 @@
     [self configurePopoverPresentationController:channelActions.popoverPresentationController];
 
     if (channel.status == TWMChannelStatusJoined) {
+        [channelActions addAction:[UIAlertAction actionWithTitle:@"Set All Messages Consumed"
+                                                           style:UIAlertActionStyleDefault
+                                                         handler:^(UIAlertAction *action) {
+                                                             [weakSelf setAllMessagesConsumed:channel];
+                                                         }]];
         [channelActions addAction:[UIAlertAction actionWithTitle:@"Set No Messages Consumed"
                                                            style:UIAlertActionStyleDefault
                                                          handler:^(UIAlertAction *action) {
@@ -219,6 +224,18 @@
             [self.tableView reloadData];
         });
     }
+}
+
+- (void)setAllMessagesConsumed:(TWMChannel *)channel {
+    [channel synchronizeWithCompletion:^(TWMResult *result) {
+        if ([result isSuccessful]) {
+            [channel.messages setAllMessagesConsumed];
+        } else {
+            [DemoHelpers displayToastWithMessage:@"Set all messages consumed failed."
+                                          inView:self.view];
+            NSLog(@"%s: %@", __FUNCTION__, result.error);
+        }
+    }];
 }
 
 - (void)setNoMessagesConsumed:(TWMChannel *)channel {
