@@ -966,12 +966,6 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-     channelHistoryLoaded:(TWMChannel *)channel {
-    [self loadMessages];
-    [self rebuildData];
-}
-
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
                   channel:(TWMChannel *)channel
              memberJoined:(TWMMember *)member {
     [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ joined the channel.", [DemoHelpers displayNameForMember:member]]

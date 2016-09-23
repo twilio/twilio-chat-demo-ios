@@ -28,9 +28,11 @@
 }
 
 - (void)presentRootViewController {
-    AppDelegate *appDelegate = [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
     if ([[IPMessagingManager sharedManager] hasIdentity]) {
-        [[IPMessagingManager sharedManager] loginWithStoredIdentity];
+        if (!self.client) {
+            [[IPMessagingManager sharedManager] loginWithStoredIdentity];
+        }
         appDelegate.window.rootViewController = [[UIStoryboard storyboardWithName:@"Main" bundle:[NSBundle mainBundle]] instantiateInitialViewController];
     } else {
         appDelegate.window.rootViewController = [[UIStoryboard storyboardWithName:@"Main" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"login"];
