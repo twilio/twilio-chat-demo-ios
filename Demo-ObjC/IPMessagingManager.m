@@ -8,9 +8,8 @@
 #import "AppDelegate.h"
 #import "IPMessagingManager.h"
 
-@interface IPMessagingManager() <TwilioAccessManagerDelegate>
+@interface IPMessagingManager()
 @property (nonatomic, strong) TwilioIPMessagingClient *client;
-@property (nonatomic, strong) TwilioAccessManager *accessManager;
 
 @property (nonatomic, strong) NSData *lastToken;
 @property (nonatomic, strong) NSDictionary *lastNotification;
@@ -59,32 +58,19 @@
     [self storeIdentity:identity];
     
     NSString *token = [self tokenForIdentity:identity];
-    self.accessManager = [TwilioAccessManager accessManagerWithToken:token delegate:self];
     TwilioIPMessagingClientProperties *properties = [[TwilioIPMessagingClientProperties alloc] init];
     properties.initialMessageCount = 10;
-    self.client = [TwilioIPMessagingClient ipMessagingClientWithAccessManager:self.accessManager
-                                                                   properties:properties
-                                                                     delegate:nil];
+    self.client = [TwilioIPMessagingClient ipMessagingClientWithToken:token
+                                                           properties:properties
+                                                             delegate:nil];
     
     return YES;
-}
-
-- (void)accessManagerTokenExpired:(TwilioAccessManager *)accessManager {
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        NSString *newToken = [self tokenForIdentity:accessManager.identity];
-        [accessManager updateToken:newToken];
-    });
-}
-
-- (void)accessManager:(TwilioAccessManager *)accessManager error:(NSError *)error {
-    NSLog(@"Error updating token: %@", error);
 }
 
 - (void)logout {
     [self storeIdentity:nil];
     [self.client shutdown];
     self.client = nil;
-    self.accessManager = nil;
 }
 
 - (void)updatePushToken:(NSData *)token {
