@@ -1,24 +1,24 @@
 //
-//  IPMessagingManager.m
-//  Twilio IP Messaging Demo
+//  ChatManager.m
+//  Twilio Chat Demo
 //
 //  Copyright (c) 2011-2016 Twilio. All rights reserved.
 //
 
 #import "AppDelegate.h"
-#import "IPMessagingManager.h"
+#import "ChatManager.h"
 
-@interface IPMessagingManager()
-@property (nonatomic, strong) TwilioIPMessagingClient *client;
+@interface ChatManager()
+@property (nonatomic, strong) TwilioChatClient *client;
 
 @property (nonatomic, strong) NSData *lastToken;
 @property (nonatomic, strong) NSDictionary *lastNotification;
 @end
 
-@implementation IPMessagingManager
+@implementation ChatManager
 
 + (instancetype)sharedManager {
-    static IPMessagingManager *sharedMyManager = nil;
+    static ChatManager *sharedMyManager = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         sharedMyManager = [[self alloc] init];
@@ -28,9 +28,9 @@
 
 - (void)presentRootViewController {
     AppDelegate *appDelegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
-    if ([[IPMessagingManager sharedManager] hasIdentity]) {
+    if ([[ChatManager sharedManager] hasIdentity]) {
         if (!self.client) {
-            [[IPMessagingManager sharedManager] loginWithStoredIdentity];
+            [[ChatManager sharedManager] loginWithStoredIdentity];
         }
         appDelegate.window.rootViewController = [[UIStoryboard storyboardWithName:@"Main" bundle:[NSBundle mainBundle]] instantiateInitialViewController];
     } else {
@@ -58,12 +58,12 @@
     [self storeIdentity:identity];
     
     NSString *token = [self tokenForIdentity:identity];
-    TwilioIPMessagingClientProperties *properties = [[TwilioIPMessagingClientProperties alloc] init];
+    TwilioChatClientProperties *properties = [[TwilioChatClientProperties alloc] init];
     properties.initialMessageCount = 10;
-    self.client = [TwilioIPMessagingClient ipMessagingClientWithToken:token
-                                                           properties:properties
-                                                             delegate:nil];
-    
+    self.client = [TwilioChatClient chatClientWithToken:token
+                                             properties:properties
+                                               delegate:nil];
+
     return YES;
 }
 
@@ -75,12 +75,12 @@
 
 - (void)updatePushToken:(NSData *)token {
     self.lastToken = token;
-    [self updateIpMessagingClient];
+    [self updateChatClient];
 }
 
 - (void)receivedNotification:(NSDictionary *)notification {
     self.lastNotification = notification;
-    [self updateIpMessagingClient];
+    [self updateChatClient];
 }
 
 - (NSString *)identity {
@@ -89,11 +89,7 @@
 
 #pragma mark Push functionality
 
-- (void)setIpMessagingClient:(TwilioIPMessagingClient *)ipMessagingClient {
-    [self updateIpMessagingClient];
-}
-
-- (void)updateIpMessagingClient {
+- (void)updateChatClient {
     if (self.lastToken) {
         [self.client registerWithToken:self.lastToken];
         self.lastToken = nil;

@@ -1,6 +1,6 @@
 //
 //  MessageTableViewCell.m
-//  Twilio IP Messaging Demo
+//  Twilio Chat Demo
 //
 //  Copyright (c) 2011-2016 Twilio. All rights reserved.
 //
@@ -8,7 +8,7 @@
 #import "MessageTableViewCell.h"
 #import "ReactionsView.h"
 #import "DemoHelpers.h"
-#import "IPMessagingManager.h"
+#import "ChatManager.h"
 
 @interface MessageTableViewCell() <ReactionViewDelegate>
 @property (nonatomic, weak) IBOutlet UILabel *authorLabel;
@@ -32,14 +32,14 @@
     // Configure the view for the selected state
 }
 
-- (void)setMessage:(TWMMessage *)message {
+- (void)setMessage:(TCHMessage *)message {
     _message = message;
     
     [self configureDisplay];
 }
 
 - (void)configureDisplay {
-    TWMMember *author = [[self channel] memberWithIdentity:[self message].author];
+    TCHMember *author = [[self channel] memberWithIdentity:[self message].author];
     if (author) {
         self.authorLabel.text = [DemoHelpers displayNameForMember:author];
         self.avatarImage.image = [DemoHelpers avatarForUserInfo:author.userInfo size:44.0 scalingFactor:2.0];
@@ -67,7 +67,7 @@
 }
 
 - (NSString *)localIdentity {
-    TWMUserInfo *localUserInfo = [[[IPMessagingManager sharedManager] client] userInfo];
+    TCHUserInfo *localUserInfo = [[[ChatManager sharedManager] client] userInfo];
     return localUserInfo.identity;
 }
 

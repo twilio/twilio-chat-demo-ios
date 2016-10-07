@@ -1,13 +1,13 @@
 //
 //  ChannelViewController.h
-//  Twilio IP Messaging Demo
+//  Twilio Chat Demo
 //
 //  Copyright (c) 2011-2016 Twilio. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
-#import <TwilioIPMessagingClient/TwilioIPMessagingClient.h>
+#import <TwilioChatClient/TwilioChatClient.h>
 
 @interface ChannelViewController : UIViewController
-@property (nonatomic, strong) TWMChannel *channel;
+@property (nonatomic, strong) TCHChannel *channel;
 @end

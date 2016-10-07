@@ -1,5 +1,5 @@
 source 'https://github.com/twilio/cocoapod-specs'
 
 target 'Demo-ObjC' do
-  pod 'TwilioIPMessagingClient', '~> 0.15.0'
+  pod 'TwilioChatClient', '~> 0.16.0'
 end

@@ -6,11 +6,11 @@
 //  Copyright © 2016 Twilio. All rights reserved.
 //
 
-#import <TwilioIPMessagingClient/TWMMember.h>
+#import <TwilioChatClient/TCHMember.h>
 
 #import "UserListViewController.h"
 #import "DemoHelpers.h"
-#import "IPMessagingManager.h"
+#import "ChatManager.h"
 
 @interface UserListViewController () <UITableViewDelegate, UITableViewDataSource>
 
@@ -69,12 +69,12 @@
     
     id user = self.users[indexPath.row];
     
-    if ([user isKindOfClass:[TWMMember class]]) {
-        TWMMember *member = user;
+    if ([user isKindOfClass:[TCHMember class]]) {
+        TCHMember *member = user;
         cell.textLabel.text = [NSString stringWithFormat:@"%@", [DemoHelpers displayNameForMember:member]];
         cell.imageView.image = [DemoHelpers avatarForUserInfo:member.userInfo size:44.0 scalingFactor:2.0];
 
-        if (([member userInfo] == [[[IPMessagingManager sharedManager] client] userInfo])) {
+        if (([member userInfo] == [[[ChatManager sharedManager] client] userInfo])) {
             [cell setBackgroundColor:[UIColor colorWithWhite:0.96f alpha:1.0f]];
         }
     } else {
