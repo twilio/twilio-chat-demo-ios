@@ -21,12 +21,17 @@ static NSString * const kChannelDataTypeUserConsumption = @"userConsumption";
 static NSString * const kChannelDataTypeMembersTyping = @"membersTyping";
 static NSString * const kChannelDataData = @"channelDataData";
 
+static const NSUInteger kInitialMessageCountToLoad = 20;
+static const NSUInteger kMoreMessageCountToLoad = 50;
+
 @interface ChannelViewController () <UITableViewDataSource, UITableViewDelegate, TCHChannelDelegate, UITextFieldDelegate, UIPopoverPresentationControllerDelegate, MessageTableViewCellDelegate>
 @property (nonatomic, weak) IBOutlet UITableView *tableView;
 @property (weak, nonatomic) IBOutlet UITextField *messageInput;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *keyboardAdjustmentConstraint;
 
 @property (nonatomic, strong) NSMutableOrderedSet<TCHMessage *> *messages;
+@property (nonatomic, assign) BOOL mightHaveMoreMessages;
+@property (nonatomic, assign) BOOL loadingMoreMessages;
 @property (nonatomic, strong) NSMutableArray<id> *channelData;
 @property (nonatomic, strong) NSMutableArray *typingUsers;
 @property (nonatomic, copy) NSNumber *userConsumedIndex;
@@ -57,9 +62,11 @@ static NSString * const kChannelDataData = @"channelDataData";
     self.messages = [[NSMutableOrderedSet alloc] init];
     self.typingUsers = [NSMutableArray array];
     self.cachedHeights = [NSMutableDictionary dictionary];
+    self.mightHaveMoreMessages = YES;
+    self.loadingMoreMessages = NO;
 }
 
-- (void)updateChannel {
+- (void)populateConsumptionHorizonData {
     NSNumber *lastConsumedMessageIndex = [self.channel.messages lastConsumedMessageIndex];
     
     if (lastConsumedMessageIndex && ![[[self.messages lastObject] index] isEqualToNumber:lastConsumedMessageIndex]) {
@@ -107,7 +114,6 @@ static NSString * const kChannelDataData = @"channelDataData";
     [super viewWillAppear:animated];
     if (self.channel) {
         self.channel.delegate = self;
-        [self loadMessages];
         
         [[NSNotificationCenter defaultCenter] addObserver:self
                                                  selector:@selector(keyboardWillShow:)
@@ -132,20 +138,6 @@ static NSString * const kChannelDataData = @"channelDataData";
     [super viewDidAppear:animated];
     
     [self scrollToLastConsumedMessage];
-    
-    // load up the rest of the history for the channel
-    TCHMessage *firstMessage = [self.messages firstObject];
-    if (firstMessage && [firstMessage.index integerValue] > 0) {
-        [self.channel.messages getMessagesBefore:([firstMessage.index integerValue] - 1)
-                                       withCount:UINT_MAX
-                                      completion:^(TCHResult *result, NSArray<TCHMessage *> *messages) {
-                                          NSIndexSet *indexes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, messages.count)];
-                                          [self.messages insertObjects:messages
-                                                             atIndexes:indexes];
-                                          [self rebuildData];
-                                          [self scrollToLastConsumedMessage];
-        }];
-    }
 }
 
 - (void)viewWillDisappear:(BOOL)animated {
@@ -161,8 +153,7 @@ static NSString * const kChannelDataData = @"channelDataData";
     _channel = channel;
     self.channel.delegate = self;
 
-    [self loadMessages];
-    [self updateChannel];
+    [self loadInitialMessages];
 }
 
 - (void)messageActions:(UIGestureRecognizer *)gestureRecognizer {
@@ -273,11 +264,6 @@ static NSString * const kChannelDataData = @"channelDataData";
 }
 
 #pragma mark - UITableViewDataSource
-
-- (BOOL)showNewest {
-    return (self.userConsumedIndex &&
-            [self.userConsumedIndex integerValue] < [[[[self messages] lastObject] index] integerValue]);
-}
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     NSInteger count = [self channelData].count;
@@ -423,6 +409,10 @@ shouldHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
 
 - (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
     self.cachedHeights[indexPath] = @(cell.frame.size.height);
+    
+    if (indexPath.row == 0) {
+        [self loadMoreMessages];
+    }
 }
 
 - (void)tableView:(UITableView *)tableView
@@ -813,9 +803,59 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     [self.view setNeedsLayout];
 }
 
-- (void)loadMessages {
-    [self.messages removeAllObjects];
-    [self addMessages:self.channel.messages.allObjects];
+- (void)loadInitialMessages {
+    [self.channel.messages getLastMessagesWithCount:kInitialMessageCountToLoad
+                                         completion:^(TCHResult *result, NSArray<TCHMessage *> *messages) {
+                                             [self addMessages:messages];
+                                             [self populateConsumptionHorizonData];
+                                             [self scrollToLastConsumedMessage];
+                                         }];
+}
+
+- (void)loadMoreMessages {
+    if (!self.mightHaveMoreMessages || self.loadingMoreMessages) {
+        return;
+    }
+    
+    TCHMessage *firstMessage = [self.messages firstObject];
+    NSUInteger batchSize = kMoreMessageCountToLoad;
+    if (firstMessage && [firstMessage.index integerValue] > 0) {
+        self.loadingMoreMessages = YES;
+        
+        __block id currentItem = nil;
+        NSIndexPath *topIndexPath = [[self.tableView indexPathsForVisibleRows] firstObject];
+        if (topIndexPath.row > 0) {
+            NSIndexPath *bottomIndexPath = [[self.tableView indexPathsForVisibleRows] lastObject];
+            currentItem = self.channelData[bottomIndexPath.row];
+        } else {
+            currentItem = [self.messages firstObject];
+        }
+        
+        [self.channel.messages getMessagesBefore:([firstMessage.index integerValue] - 1)
+                                       withCount:batchSize
+                                      completion:^(TCHResult *result, NSArray<TCHMessage *> *messages) {
+                                          if ([result isSuccessful] && messages != nil) {
+                                              if (messages.count < batchSize) {
+                                                  self.mightHaveMoreMessages = NO;
+                                              }
+                                              
+                                              NSIndexSet *indexes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, messages.count)];
+                                              [self.messages insertObjects:messages
+                                                                 atIndexes:indexes];
+                                              [self rebuildData];
+                                              NSUInteger targetIndex = [[self channelData] indexOfObject:currentItem];
+                                              if (targetIndex > 0) {
+                                                  targetIndex -= 1;
+                                              }
+                                              [self scrollToIndex:targetIndex position:UITableViewScrollPositionTop];
+                                          } else {
+                                              [DemoHelpers displayToastWithMessage:@"Failed to load more messages." inView:self.view];
+                                              NSLog(@"%s: %@", __FUNCTION__, result.error);
+                                          }
+
+                                          self.loadingMoreMessages = NO;
+                                      }];
+    }
 }
 
 - (void)addMessages:(NSArray<TCHMessage *> *)messages {
@@ -873,7 +913,8 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
         messagesCount++;
     }
     
-    [self scrollToIndex:messagesCount - 1 position:UITableViewScrollPositionBottom];
+    NSUInteger targetIndex = messagesCount - 1;
+    [self scrollToIndex:targetIndex position:UITableViewScrollPositionBottom];
 }
 
 - (void)scrollToIndex:(NSUInteger)targetIndex position:(UITableViewScrollPosition)position {
