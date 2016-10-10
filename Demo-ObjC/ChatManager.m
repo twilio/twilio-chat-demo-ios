@@ -8,7 +8,10 @@
 #import "AppDelegate.h"
 #import "ChatManager.h"
 
-@interface ChatManager()
+#import <TwilioAccessManager/TwilioAccessManager.h>
+
+@interface ChatManager() <TwilioAccessManagerDelegate>
+@property (nonatomic, strong) TwilioAccessManager *accessManager;
 @property (nonatomic, strong) TwilioChatClient *client;
 
 @property (nonatomic, strong) NSData *lastToken;
@@ -63,6 +66,13 @@
     self.client = [TwilioChatClient chatClientWithToken:token
                                              properties:properties
                                                delegate:nil];
+    self.accessManager = [TwilioAccessManager accessManagerWithToken:token
+                                                            delegate:self];
+
+    __weak typeof(self.client) weakClient = self.client;
+    [self.accessManager registerClient:self.client forUpdates:^(NSString * _Nonnull updatedToken) {
+        [weakClient updateToken:updatedToken];
+    }];
 
     return YES;
 }
@@ -116,5 +126,17 @@
 - (NSString *)storedIdentity {
     return [[NSUserDefaults standardUserDefaults] objectForKey:@"identity"];
 }
-
+    
+#pragma mark - TwilioAccessManagerDelegate implementation
+    
+- (void)accessManagerTokenWillExpire:(nonnull TwilioAccessManager *)accessManager {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+        [accessManager updateToken:[self tokenForIdentity:[self identity]]];
+    });
+}
+    
+- (void)accessManagerTokenInvalid:(nonnull TwilioAccessManager *)accessManager {
+    NSLog(@"error in token");
+}
+    
 @end
