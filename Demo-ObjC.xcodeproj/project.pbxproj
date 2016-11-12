@@ -17,6 +17,7 @@
 		58223AC81B69571C00F0DF97 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 58223AC71B69571C00F0DF97 /* Images.xcassets */; };
 		58223ACB1B69571C00F0DF97 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 58223AC91B69571C00F0DF97 /* LaunchScreen.xib */; };
 		58223B4C1B6AA07600F0DF97 /* libc++.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 58223B4B1B6AA07600F0DF97 /* libc++.dylib */; };
+		583660181DDA4F51004D6B1D /* PublicChannelListViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 583660171DDA4F51004D6B1D /* PublicChannelListViewController.m */; };
 		583D81461B6FA82E00BF3C56 /* ChannelTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 583D81451B6FA82E00BF3C56 /* ChannelTableViewCell.m */; };
 		584C05901D204EA000F0DBC9 /* ReactionView.m in Sources */ = {isa = PBXBuildFile; fileRef = 584C058F1D204EA000F0DBC9 /* ReactionView.m */; };
 		58652D051BC5BBC800250FEA /* MemberTypingTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 58652D041BC5BBC800250FEA /* MemberTypingTableViewCell.m */; };
@@ -45,6 +46,8 @@
 		58223AC71B69571C00F0DF97 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		58223ACA1B69571C00F0DF97 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/LaunchScreen.xib; sourceTree = "<group>"; };
 		58223B4B1B6AA07600F0DF97 /* libc++.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libc++.dylib"; path = "usr/lib/libc++.dylib"; sourceTree = SDKROOT; };
+		583660161DDA4F51004D6B1D /* PublicChannelListViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PublicChannelListViewController.h; sourceTree = "<group>"; };
+		583660171DDA4F51004D6B1D /* PublicChannelListViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PublicChannelListViewController.m; sourceTree = "<group>"; };
 		583D81441B6FA82E00BF3C56 /* ChannelTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ChannelTableViewCell.h; sourceTree = "<group>"; };
 		583D81451B6FA82E00BF3C56 /* ChannelTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ChannelTableViewCell.m; sourceTree = "<group>"; };
 		584C058E1D204EA000F0DBC9 /* ReactionView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ReactionView.h; sourceTree = "<group>"; };
@@ -125,6 +128,8 @@
 				58083A521D20635A008ECE1E /* ReactionsView.m */,
 				58083A571D22D84A008ECE1E /* UserListViewController.h */,
 				58083A581D22D84A008ECE1E /* UserListViewController.m */,
+				583660161DDA4F51004D6B1D /* PublicChannelListViewController.h */,
+				583660171DDA4F51004D6B1D /* PublicChannelListViewController.m */,
 			);
 			path = "Demo-ObjC";
 			sourceTree = "<group>";
@@ -221,6 +226,7 @@
 				58E2F6431DA8209D00A5F23C /* ChatManager.m in Sources */,
 				58223ABD1B69571C00F0DF97 /* main.m in Sources */,
 				584C05901D204EA000F0DBC9 /* ReactionView.m in Sources */,
+				583660181DDA4F51004D6B1D /* PublicChannelListViewController.m in Sources */,
 				58D509131B7B7AF00093B5F1 /* MessageTableViewCell.m in Sources */,
 				58083A591D22D84A008ECE1E /* UserListViewController.m in Sources */,
 			);

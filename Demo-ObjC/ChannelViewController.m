@@ -140,6 +140,10 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
     [super viewDidAppear:animated];
     
     [self scrollToLastConsumedMessage];
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        self.userConsumedIndex = nil;
+    });
 }
 
 - (void)viewWillDisappear:(BOOL)animated {
@@ -310,25 +314,26 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
 - (void)rebuildData {
     NSMutableArray<id> *newData = [NSMutableArray arrayWithArray:[self.messages array]];
     NSArray *consumptionKeys = [[[self seenBy] allKeys] sortedArrayUsingSelector:@selector(compare:)];
-
+    NSPredicate *messageWithIndexFilter = [NSPredicate predicateWithFormat:@"self.index <= $index"];
+    
     if (newData.count > 0) {
         if (self.userConsumedIndex) {
-            TCHMessage *consumptionMessage = [[[self channel] messages] messageForConsumptionIndex:self.userConsumedIndex];
-            if (consumptionMessage) {
-                NSUInteger ndx = [newData indexOfObject:consumptionMessage];
-                if (ndx != (newData.count - 1)) {
-                    [newData insertObject:@{
-                                            kChannelDataType: kChannelDataTypeUserConsumption
-                                            }
-                                  atIndex:ndx+1];
-                }
+            NSPredicate *filter = [messageWithIndexFilter predicateWithSubstitutionVariables:@{@"index": self.userConsumedIndex}];
+            id targetItem = [[newData filteredArrayUsingPredicate:filter] lastObject];
+            if (targetItem) {
+                NSUInteger ndx = [newData indexOfObject:targetItem];
+                [newData insertObject:@{
+                                        kChannelDataType: kChannelDataTypeUserConsumption
+                                        }
+                              atIndex:ndx+1];
             }
         }
         
         for (NSNumber *consumptionIndex in consumptionKeys) {
-            TWMMessage *consumptionMessage = [[[self channel] messages] messageForConsumptionIndex:consumptionIndex];
-            if (consumptionMessage) {
-                NSUInteger ndx = [newData indexOfObject:consumptionMessage];
+            NSPredicate *filter = [messageWithIndexFilter predicateWithSubstitutionVariables:@{@"index": consumptionIndex}];
+            id targetItem = [[newData filteredArrayUsingPredicate:filter] lastObject];
+            if (targetItem) {
+                NSUInteger ndx = [newData indexOfObject:targetItem];
                 [newData insertObject:@{
                                         kChannelDataType: kChannelDataTypeMemberConsumption,
                                         kChannelDataData: self.seenBy[consumptionIndex]
@@ -397,6 +402,8 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
         [messageCell layoutIfNeeded];
         
         cell = messageCell;
+    } else {
+        cell = [[UITableViewCell alloc] initWithFrame:CGRectZero];
     }
 
     return cell;
@@ -894,12 +901,15 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     }
     
     NSNumber *lastConsumedMessage = [[[self channel] messages] lastConsumedMessageIndex];
-    NSUInteger targetIndex = 0;
-    if (!lastConsumedMessage) {
-        targetIndex = self.channelData.count - 1;
-    } else {
-        TCHMessage *message = [[[self channel] messages] messageForConsumptionIndex:lastConsumedMessage];
-        targetIndex = [[self channelData] indexOfObject:message];
+    NSUInteger targetIndex = self.channelData.count - 1;
+    if (lastConsumedMessage) {
+        if (self.userConsumedIndex) {
+            NSPredicate *filter = [NSPredicate predicateWithFormat:@"self.index <= %@", self.userConsumedIndex];
+            TCHMessage *targetItem = [[self.channelData filteredArrayUsingPredicate:filter] lastObject];
+            if (targetItem) {
+                targetIndex = [[self channelData] indexOfObject:targetItem];
+            }
+        }
     }
 
     [self scrollToIndex:targetIndex position:UITableViewScrollPositionTop];
