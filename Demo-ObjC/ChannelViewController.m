@@ -76,25 +76,27 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
 }
 
 - (void)refreshSeenBy {
-    NSMutableDictionary *seenBy = [NSMutableDictionary dictionary];
-    for (TCHMember *member in [self.channel.members allObjects]) {
-        if (![self isMe:member]) {
-            NSNumber *index = [member lastConsumedMessageIndex];
-            if (index) {
-                NSMutableArray *members = seenBy[index];
-                if (!members) {
-                    members = [NSMutableArray array];
-                    seenBy[index] = members;
-                }
-                if (![members containsObject:member]) {
-                    [members addObject:member];
+    [self.channel.members membersWithCompletion:^(TCHResult *result, TCHMemberPaginator *paginator) {
+        NSMutableDictionary *seenBy = [NSMutableDictionary dictionary];
+        for (TCHMember *member in paginator.items) {
+            if (![self isMe:member]) {
+                NSNumber *index = [member lastConsumedMessageIndex];
+                if (index) {
+                    NSMutableArray *members = seenBy[index];
+                    if (!members) {
+                        members = [NSMutableArray array];
+                        seenBy[index] = members;
+                    }
+                    if (![members containsObject:member]) {
+                        [members addObject:member];
+                    }
                 }
             }
         }
-    }
-
-    self.seenBy = seenBy;
-    [self rebuildData];
+        
+        self.seenBy = seenBy;
+        [self rebuildData];
+    }];
 }
 
 - (void)viewDidLoad {
@@ -730,7 +732,9 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (void)listMembers {
-    [self displayUsersList:self.channel.members.allObjects caption:@"Channel Members"];
+    [self.channel.members membersWithCompletion:^(TCHResult *result, TCHMemberPaginator *paginator) {
+        [self displayUsersList:paginator.items caption:@"Channel Members"];
+    }];
 }
 
 - (void)leaveChannel {
