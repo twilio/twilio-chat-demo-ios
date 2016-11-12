@@ -215,16 +215,31 @@
 
     TCHChannels *channelsList = [[[ChatManager sharedManager] client] channelsList];
     if (channelsList) {
-        NSMutableOrderedSet *newChannels = [[NSMutableOrderedSet alloc] init];
-        [newChannels addObjectsFromArray:[channelsList allObjects]];
-        [self sortChannels:newChannels];
+        __block NSMutableOrderedSet *newChannels = [[NSMutableOrderedSet alloc] init];
         
-        dispatch_async(dispatch_get_main_queue(), ^{
-            self.channels = newChannels;
-            [self.tableView reloadData];
-        });
+        void __block (^_completion)();
+        TCHChannelPaginatorCompletion completion = ^(TCHResult *result, TCHChannelPaginator *paginator) {
+            [newChannels addObjectsFromArray:[paginator items]];
+            
+            if ([paginator hasNextPage]) {
+                [paginator requestNextPageWithCompletion:_completion];
+            } else {
+                // reached last page
+                
+                [self sortChannels:newChannels];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    self.channels = newChannels;
+                    [self.tableView reloadData];
+                });
+            }
+        };
+        _completion = completion;
+        
+        [channelsList userChannelsWithCompletion:completion];
     }
 }
+
+
 
 - (void)setAllMessagesConsumed:(TCHChannel *)channel {
     [channel synchronizeWithCompletion:^(TCHResult *result) {
