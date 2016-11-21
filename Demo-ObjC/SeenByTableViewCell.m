@@ -1,6 +1,6 @@
 //
 //  SeenByTableViewCell.m
-//  Twilio IP Messaging Client
+//  Twilio Chat Demo
 //
 //  Copyright (c) 2011-2016 Twilio. All rights reserved.
 //

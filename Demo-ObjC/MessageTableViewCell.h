@@ -1,28 +1,28 @@
 //
 //  MessageTableViewCell.h
-//  Twilio IP Messaging Demo
+//  Twilio Chat Demo
 //
 //  Copyright (c) 2011-2016 Twilio. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
-#import <TwilioIPMessagingClient/TwilioIPMessagingClient.h>
+#import <TwilioChatClient/TwilioChatClient.h>
 
 @protocol MessageTableViewCellDelegate;
 
 @interface MessageTableViewCell : UITableViewCell
 
-@property (nonatomic, strong) TWMChannel *channel;
-@property (nonatomic, strong) TWMMessage *message;
+@property (nonatomic, strong) TCHChannel *channel;
+@property (nonatomic, strong) TCHMessage *message;
 @property (nonatomic, assign) id<MessageTableViewCellDelegate> delegate;
 
 @end
 
 @protocol MessageTableViewCellDelegate <NSObject>
 - (void)reactionIncremented:(NSString *)emojiString
-                    message:(TWMMessage *)message;
+                    message:(TCHMessage *)message;
 - (void)reactionDecremented:(NSString *)emojiString
-                    message:(TWMMessage *)message;
+                    message:(TCHMessage *)message;
 - (void)showUsersForReaction:(NSString *)emojiString
-                     message:(TWMMessage *)message;
+                     message:(TCHMessage *)message;
 @end

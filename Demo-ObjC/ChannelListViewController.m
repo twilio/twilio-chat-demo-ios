@@ -1,6 +1,6 @@
 //
 //  ChannelListViewController.m
-//  Twilio IP Messaging Demo
+//  Twilio Chat Demo
 //
 //  Copyright (c) 2011-2016 Twilio. All rights reserved.
 //
@@ -8,10 +8,11 @@
 #import "ChannelListViewController.h"
 #import "ChannelTableViewCell.h"
 #import "ChannelViewController.h"
-#import "IPMessagingManager.h"
+#import "ChatManager.h"
 #import "DemoHelpers.h"
+#import "PublicChannelListViewController.h"
 
-@interface ChannelListViewController () <TwilioIPMessagingClientDelegate, UITableViewDataSource, UITableViewDelegate>
+@interface ChannelListViewController () <TwilioChatClientDelegate, UITableViewDataSource, UITableViewDelegate, UIPopoverPresentationControllerDelegate>
 @property (nonatomic, weak) IBOutlet UITableView *tableView;
 
 @property (nonatomic, strong) UIRefreshControl *refreshControl;
@@ -33,11 +34,11 @@
                             action:@selector(refreshChannels)
                   forControlEvents:UIControlEventValueChanged];
 
-    TwilioIPMessagingClient *client = [[IPMessagingManager sharedManager] client];
+    TwilioChatClient *client = [[ChatManager sharedManager] client];
     if (client) {
         client.delegate = self;
         
-        if (client.synchronizationStatus == TWMClientSynchronizationStatusCompleted) {
+        if (client.synchronizationStatus == TCHClientSynchronizationStatusCompleted) {
             [self populateChannels];
         }
     }
@@ -62,26 +63,38 @@
 }
 
 - (IBAction)logoutTapped:(id)sender {
-    [[IPMessagingManager sharedManager] logout];
-    [[IPMessagingManager sharedManager] presentRootViewController];
+    [[ChatManager sharedManager] logout];
+    [[ChatManager sharedManager] presentRootViewController];
 }
 
 - (IBAction)newChannelTapped:(id)sender {
-    UIAlertController *newChannelActionSheet = [UIAlertController alertControllerWithTitle:@"New Channel"
+    UIAlertController *newChannelActionSheet = [UIAlertController alertControllerWithTitle:@"Options"
                                                                                    message:nil
                                                                             preferredStyle:UIAlertControllerStyleActionSheet];
     [self configurePopoverPresentationController:newChannelActionSheet.popoverPresentationController];
 
-    [newChannelActionSheet addAction:[UIAlertAction actionWithTitle:@"Public Channel"
+    [newChannelActionSheet addAction:[UIAlertAction actionWithTitle:@"Create Public Channel"
                                                               style:UIAlertActionStyleDefault
                                                             handler:^(UIAlertAction *action) {
                                                                 [self newChannelPrivate:NO];
                                                             }]];
     
-    [newChannelActionSheet addAction:[UIAlertAction actionWithTitle:@"Private Channel"
+    [newChannelActionSheet addAction:[UIAlertAction actionWithTitle:@"Create Private Channel"
                                                               style:UIAlertActionStyleDefault
                                                             handler:^(UIAlertAction *action) {
                                                                 [self newChannelPrivate:YES];
+                                                            }]];
+
+    [newChannelActionSheet addAction:[UIAlertAction actionWithTitle:@"Join Channel by Unique Name"
+                                                              style:UIAlertActionStyleDefault
+                                                            handler:^(UIAlertAction *action) {
+                                                                [self joinChannelByUniqueName];
+                                                            }]];
+    
+    [newChannelActionSheet addAction:[UIAlertAction actionWithTitle:@"Join Public Channel"
+                                                              style:UIAlertActionStyleDefault
+                                                            handler:^(UIAlertAction *action) {
+                                                                [self browsePublicChannels];
                                                             }]];
     
     [newChannelActionSheet addAction:[UIAlertAction actionWithTitle:@"Cancel"
@@ -112,18 +125,20 @@
                                      if (newChannelNameTextField &&
                                          newChannelNameTextField.text &&
                                          ![newChannelNameTextField.text isEqualToString:@""]) {
-                                         options[TWMChannelOptionFriendlyName] = newChannelNameTextField.text;
+                                         options[TCHChannelOptionFriendlyName] = newChannelNameTextField.text;
                                      }
                                      if (isPrivate) {
-                                         options[TWMChannelOptionType] = @(TWMChannelTypePrivate);
+                                         options[TCHChannelOptionType] = @(TCHChannelTypePrivate);
                                      }
                                      
-                                     TWMChannels *channelsList = [[[IPMessagingManager sharedManager] client] channelsList];
+                                     TCHChannels *channelsList = [[[ChatManager sharedManager] client] channelsList];
                                      [channelsList createChannelWithOptions:options
-                                                                      completion:^(TWMResult *result, TWMChannel *channel) {
+                                                                      completion:^(TCHResult *result, TCHChannel *channel) {
                                                                           if (result.isSuccessful) {
                                                                               [DemoHelpers displayToastWithMessage:@"Channel Created"
                                                                                                             inView:self.view];
+                                                                              
+                                                                              [self joinChannel:channel];
                                                                           } else {
                                                                               [DemoHelpers displayToastWithMessage:@"Channel Create Failed"
                                                                                                             inView:self.view];
@@ -141,7 +156,87 @@
                      completion:nil];
 }
 
-- (void)displayOperationsForChannel:(TWMChannel *)channel
+- (void)joinChannelByUniqueName {
+    UIAlertController *joinChannelDialog = [UIAlertController alertControllerWithTitle:@"Join Channel"
+                                                                              message:@"What is the unique name of the channel you'd like to join?"
+                                                                       preferredStyle:UIAlertControllerStyleAlert];
+    
+    [joinChannelDialog addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+        textField.placeholder = @"Unique Name";
+    }];
+    
+    [joinChannelDialog addAction:[UIAlertAction actionWithTitle:@"Join"
+                                                          style:UIAlertActionStyleDefault
+                                                        handler:
+                                  ^(UIAlertAction *action) {
+                                      UITextField *channelUniqueNameTextField = joinChannelDialog.textFields[0];
+                                      
+                                      TCHChannels *channelsList = [[[ChatManager sharedManager] client] channelsList];
+                                      [channelsList channelWithSidOrUniqueName:channelUniqueNameTextField.text
+                                                                    completion:^(TCHResult *result, TCHChannel *channel) {
+                                                                        if (result.isSuccessful) {
+                                                                            [self joinChannel:channel];
+                                                                        } else {
+                                                                            [DemoHelpers displayToastWithMessage:@"Channel Join Failed"
+                                                                                                          inView:self.view];
+                                                                            NSLog(@"%s: %@", __FUNCTION__, result.error);
+                                                                        }
+                                                                    }];
+                                  }]];
+    
+    [joinChannelDialog addAction:[UIAlertAction actionWithTitle:@"Cancel"
+                                                          style:UIAlertActionStyleCancel
+                                                        handler:nil]];
+    
+    [self presentViewController:joinChannelDialog
+                       animated:YES
+                     completion:nil];
+}
+
+- (void)browsePublicChannels {
+    TCHChannels *channelsList = [[[ChatManager sharedManager] client] channelsList];
+
+    void __block (^_completion)();
+    TCHChannelDescriptorPaginatorCompletion completion = ^(TCHResult *result, TCHChannelDescriptorPaginator *paginator) {
+        if (result.isSuccessful) {
+            [self.view endEditing:YES];
+            
+            UINavigationController *navigationController = [self.storyboard instantiateViewControllerWithIdentifier:@"publicChannelsList"];
+            navigationController.modalPresentationStyle = UIModalPresentationPopover;
+            navigationController.preferredContentSize = CGSizeMake(
+                                                                   self.tableView.frame.size.width * 1.0,
+                                                                   self.tableView.frame.size.height * 0.70
+                                                                   );
+            
+            UIPopoverPresentationController *popoverController = navigationController.popoverPresentationController;
+            popoverController.delegate = self;
+            popoverController.sourceView = self.view;
+            popoverController.sourceRect = (CGRect){
+                .origin = self.tableView.center,
+                .size = CGSizeZero
+            };
+            popoverController.permittedArrowDirections = 0;
+            navigationController.navigationBarHidden = YES;
+            
+            PublicChannelListViewController *publicChannelListController = (PublicChannelListViewController *)navigationController.topViewController;
+            publicChannelListController.paginator = paginator;
+            [self presentViewController:navigationController
+                               animated:YES
+                             completion:^{
+                                 
+                             }];
+        } else {
+            [DemoHelpers displayToastWithMessage:@"Failed to get list of public channels."
+                                          inView:self.view];
+            NSLog(@"%s: %@", __FUNCTION__, result.error);
+        }
+    };
+    _completion = completion;
+    
+    [channelsList publicChannelsWithCompletion:completion];
+}
+
+- (void)displayOperationsForChannel:(TCHChannel *)channel
                         calledFromSwipe:(BOOL)calledFromSwipe {
     __weak __typeof(self) weakSelf = self;
     
@@ -150,7 +245,12 @@
                                                                      preferredStyle:UIAlertControllerStyleActionSheet];
     [self configurePopoverPresentationController:channelActions.popoverPresentationController];
 
-    if (channel.status == TWMChannelStatusJoined) {
+    if (channel.status == TCHChannelStatusJoined) {
+        [channelActions addAction:[UIAlertAction actionWithTitle:@"Set All Messages Consumed"
+                                                           style:UIAlertActionStyleDefault
+                                                         handler:^(UIAlertAction *action) {
+                                                             [weakSelf setAllMessagesConsumed:channel];
+                                                         }]];
         [channelActions addAction:[UIAlertAction actionWithTitle:@"Set No Messages Consumed"
                                                            style:UIAlertActionStyleDefault
                                                          handler:^(UIAlertAction *action) {
@@ -163,7 +263,7 @@
                                                          }]];
     }
     
-    if (channel.status == TWMChannelStatusInvited) {
+    if (channel.status == TCHChannelStatusInvited) {
         [channelActions addAction:[UIAlertAction actionWithTitle:@"Decline Invite"
                                                            style:UIAlertActionStyleDefault
                                                          handler:^(UIAlertAction *action) {
@@ -171,7 +271,7 @@
                                                          }]];
     }
     
-    if (channel.status == TWMChannelStatusInvited || channel.status == TWMChannelStatusNotParticipating) {
+    if (channel.status == TCHChannelStatusInvited || channel.status == TCHChannelStatusNotParticipating) {
         [channelActions addAction:[UIAlertAction actionWithTitle:@"Join"
                                                            style:UIAlertActionStyleDefault
                                                          handler:^(UIAlertAction *action) {
@@ -208,21 +308,48 @@
     self.channels = nil;
     [self.tableView reloadData];
 
-    TWMChannels *channelsList = [[[IPMessagingManager sharedManager] client] channelsList];
+    TCHChannels *channelsList = [[[ChatManager sharedManager] client] channelsList];
     if (channelsList) {
-        NSMutableOrderedSet *newChannels = [[NSMutableOrderedSet alloc] init];
-        [newChannels addObjectsFromArray:[channelsList allObjects]];
-        [self sortChannels:newChannels];
+        __block NSMutableOrderedSet *newChannels = [[NSMutableOrderedSet alloc] init];
         
-        dispatch_async(dispatch_get_main_queue(), ^{
-            self.channels = newChannels;
-            [self.tableView reloadData];
-        });
+        void __block (^_completion)();
+        TCHChannelPaginatorCompletion completion = ^(TCHResult *result, TCHChannelPaginator *paginator) {
+            [newChannels addObjectsFromArray:[paginator items]];
+            
+            if ([paginator hasNextPage]) {
+                [paginator requestNextPageWithCompletion:_completion];
+            } else {
+                // reached last page
+                
+                [self sortChannels:newChannels];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    self.channels = newChannels;
+                    [self.tableView reloadData];
+                });
+            }
+        };
+        _completion = completion;
+        
+        [channelsList userChannelsWithCompletion:completion];
     }
 }
 
-- (void)setNoMessagesConsumed:(TWMChannel *)channel {
-    [channel synchronizeWithCompletion:^(TWMResult *result) {
+
+
+- (void)setAllMessagesConsumed:(TCHChannel *)channel {
+    [channel synchronizeWithCompletion:^(TCHResult *result) {
+        if ([result isSuccessful]) {
+            [channel.messages setAllMessagesConsumed];
+        } else {
+            [DemoHelpers displayToastWithMessage:@"Set all messages consumed failed."
+                                          inView:self.view];
+            NSLog(@"%s: %@", __FUNCTION__, result.error);
+        }
+    }];
+}
+
+- (void)setNoMessagesConsumed:(TCHChannel *)channel {
+    [channel synchronizeWithCompletion:^(TCHResult *result) {
         if ([result isSuccessful]) {
             [channel.messages setNoMessagesConsumed];
         } else {
@@ -233,9 +360,10 @@
     }];
 }
 
-- (void)leaveChannel:(TWMChannel *)channel {
-    [channel leaveWithCompletion:^(TWMResult *result) {
+- (void)leaveChannel:(TCHChannel *)channel {
+    [channel leaveWithCompletion:^(TCHResult *result) {
         if (result.isSuccessful) {
+            [self.channels removeObject:channel];
             [DemoHelpers displayToastWithMessage:@"Channel left."
                                           inView:self.view];
         } else {
@@ -247,8 +375,8 @@
     }];
 }
 
-- (void)destroyChannel:(TWMChannel *)channel {
-    [channel destroyWithCompletion:^(TWMResult *result) {
+- (void)destroyChannel:(TCHChannel *)channel {
+    [channel destroyWithCompletion:^(TCHResult *result) {
         if (result.isSuccessful) {
             [DemoHelpers displayToastWithMessage:@"Channel destroyed."
                                           inView:self.view];
@@ -261,8 +389,8 @@
     }];
 }
 
-- (void)joinChannel:(TWMChannel *)channel {
-    [channel joinWithCompletion:^(TWMResult *result) {
+- (void)joinChannel:(TCHChannel *)channel {
+    [channel joinWithCompletion:^(TCHResult *result) {
         if (result.isSuccessful) {
             [DemoHelpers displayToastWithMessage:@"Channel joined."
                                           inView:self.view];
@@ -275,8 +403,8 @@
     }];
 }
 
-- (void)declineInviteOnChannel:(TWMChannel *)channel {
-    [channel declineInvitationWithCompletion:^(TWMResult *result) {
+- (void)declineInviteOnChannel:(TCHChannel *)channel {
+    [channel declineInvitationWithCompletion:^(TCHResult *result) {
         if (result.isSuccessful) {
             [DemoHelpers displayToastWithMessage:@"Invite declined."
                                           inView:self.view];
@@ -307,13 +435,13 @@
     } else {
         ChannelTableViewCell *channelCell = [tableView dequeueReusableCellWithIdentifier:@"channel"];
         
-        TWMChannel *channel = self.channels[indexPath.row];
+        TCHChannel *channel = self.channels[indexPath.row];
 
         NSString *nameLabel = channel.friendlyName;
         if (channel.friendlyName.length == 0) {
             nameLabel = @"(no friendly name)";
         }
-        if (channel.type == TWMChannelTypePrivate) {
+        if (channel.type == TCHChannelTypePrivate) {
             nameLabel = [nameLabel stringByAppendingString:@" (private)"];
         }
         
@@ -322,13 +450,13 @@
 
         UIColor *channelColor = nil;
         switch (channel.status) {
-            case TWMChannelStatusInvited:
+            case TCHChannelStatusInvited:
                 channelColor = [UIColor blueColor];
                 break;
-            case TWMChannelStatusJoined:
+            case TCHChannelStatusJoined:
                 channelColor = [UIColor greenColor];
                 break;
-            case TWMChannelStatusNotParticipating:
+            case TCHChannelStatusNotParticipating:
                 channelColor = [UIColor grayColor];
                 break;
         }
@@ -345,7 +473,7 @@
 
 #pragma mark - UITableViewDelegate methods
 
-- (TWMChannel *)channelForIndexPath:(NSIndexPath *)indexPath {
+- (TCHChannel *)channelForIndexPath:(NSIndexPath *)indexPath {
     if (!self.channels || indexPath.row >= self.channels.count) {
         return nil;
     }
@@ -361,11 +489,11 @@
         return;
     }
     
-    TWMChannel *channel = [self channelForIndexPath:indexPath];
+    TCHChannel *channel = [self channelForIndexPath:indexPath];
     
-    if (channel.status == TWMChannelStatusJoined) {
+    if (channel.status == TCHChannelStatusJoined) {
         // synchronize will be a noop and call the completion immediately if the channel is ready
-        [channel synchronizeWithCompletion:^(TWMResult *result) {
+        [channel synchronizeWithCompletion:^(TCHResult *result) {
             [self performSegueWithIdentifier:@"viewChannel" sender:channel];
         }];
     } else {
@@ -376,7 +504,7 @@
 
 - (NSArray *)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(NSIndexPath *)indexPath {
     NSMutableArray *actions = [NSMutableArray array];
-    TWMChannel *channel = [self channelForIndexPath:indexPath];
+    TCHChannel *channel = [self channelForIndexPath:indexPath];
 
     __weak __typeof(self) weakSelf = self;
     [actions addObject:[UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive
@@ -401,9 +529,15 @@
 commitEditingStyle:(UITableViewCellEditingStyle)editingStyle
 forRowAtIndexPath:(NSIndexPath *)indexPath {
     if (editingStyle == UITableViewCellEditingStyleDelete) {
-        TWMChannel *channel = [self channelForIndexPath:indexPath];
+        TCHChannel *channel = [self channelForIndexPath:indexPath];
         [self destroyChannel:channel];
     }
+}
+
+#pragma mark - UIPopoverPresentationControllerDelegate
+
+- (UIModalPresentationStyle)adaptivePresentationStyleForPresentationController:(UIPresentationController *)controller {
+    return UIModalPresentationNone;
 }
 
 #pragma mark - Internal methods
@@ -423,38 +557,38 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     popoverPresentationController.permittedArrowDirections = 0;
 }
 
-#pragma mark - TwilioIPMessagingClientDelegate
+#pragma mark - TwilioChatClientDelegate
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client synchronizationStatusChanged:(TWMClientSynchronizationStatus)status {
-    if (status == TWMClientSynchronizationStatusCompleted) {
+- (void)chatClient:(TwilioChatClient *)client synchronizationStatusChanged:(TCHClientSynchronizationStatus)status {
+    if (status == TCHClientSynchronizationStatusCompleted) {
         [self populateChannels];
     }
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelAdded:(TWMChannel *)channel {
+- (void)chatClient:(TwilioChatClient *)client channelAdded:(TCHChannel *)channel {
     [self.channels addObject:channel];
     [self sortChannels:self.channels];
     [self.tableView reloadData];
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelChanged:(TWMChannel *)channel {
+- (void)chatClient:(TwilioChatClient *)client channelChanged:(TCHChannel *)channel {
     [self.tableView reloadData];
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client channelDeleted:(TWMChannel *)channel {
+- (void)chatClient:(TwilioChatClient *)client channelDeleted:(TCHChannel *)channel {
     [self.channels removeObject:channel];
     [self.tableView reloadData];
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client errorReceived:(TWMError *)error {
+- (void)chatClient:(TwilioChatClient *)client errorReceived:(TCHError *)error {
     [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"Error received: %@", error] inView:self.view];
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client toastReceivedOnChannel:(TWMChannel *)channel message:(TWMMessage *)message {
+- (void)chatClient:(TwilioChatClient *)client toastReceivedOnChannel:(TCHChannel *)channel message:(TCHMessage *)message {
     [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"New message on channel '%@'.", channel.friendlyName] inView:self.view];
 }
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client toastRegistrationFailedWithError:(TWMError *)error {
+- (void)chatClient:(TwilioChatClient *)client toastRegistrationFailedWithError:(TCHError *)error {
     // you can bring failures in registration for pushes to user's attention here
 }
 

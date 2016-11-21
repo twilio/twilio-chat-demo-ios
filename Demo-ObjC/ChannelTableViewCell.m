@@ -1,6 +1,6 @@
 //
 //  ChannelTableViewCell.m
-//  Twilio IP Messaging Demo
+//  Twilio Chat Demo
 //
 //  Copyright (c) 2011-2016 Twilio. All rights reserved.
 //

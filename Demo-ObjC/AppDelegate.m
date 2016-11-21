@@ -1,12 +1,12 @@
 //
 //  AppDelegate.m
-//  Twilio IP Messaging Demo
+//  Twilio Chat Demo
 //
 //  Copyright (c) 2011-2016 Twilio. All rights reserved.
 //
 
 #import "AppDelegate.h"
-#import "IPMessagingManager.h"
+#import "ChatManager.h"
 
 @interface AppDelegate ()
 
@@ -24,24 +24,24 @@
 
     [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:(UIUserNotificationTypeSound | UIUserNotificationTypeAlert | UIUserNotificationTypeBadge) categories:nil]];
 
-    [[IPMessagingManager sharedManager] presentRootViewController];
+    [[ChatManager sharedManager] presentRootViewController];
     
     return YES;
 }
 
 - (void)application:(UIApplication*)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData*)deviceToken {
-    [[IPMessagingManager sharedManager] updatePushToken:deviceToken];
+    [[ChatManager sharedManager] updatePushToken:deviceToken];
 }
 
 - (void)application:(UIApplication*)application didFailToRegisterForRemoteNotificationsWithError:(NSError*)error {
     NSLog(@"Failed to get token, error: %@", error);
-    [[IPMessagingManager sharedManager] updatePushToken:nil];
+    [[ChatManager sharedManager] updatePushToken:nil];
 }
 
 - (void)application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings {
     if(notificationSettings.types == UIUserNotificationTypeNone) {
         NSLog(@"Failed to get token, error: Notifications are not allowed");
-        [[IPMessagingManager sharedManager] updatePushToken:nil];
+        [[ChatManager sharedManager] updatePushToken:nil];
     } else {
         [[UIApplication sharedApplication] registerForRemoteNotifications];
     }
@@ -49,8 +49,8 @@
 
 - (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo {
     if(application.applicationState != UIApplicationStateActive) {
-        // If your application supports multiple types of push notifications, you may wish to limit which ones you send to the TwilioIPMessagingClient here
-        [[IPMessagingManager sharedManager] receivedNotification:userInfo];
+        // If your application supports multiple types of push notifications, you may wish to limit which ones you send to the TwilioChatClient here
+        [[ChatManager sharedManager] receivedNotification:userInfo];
     }
 }
 

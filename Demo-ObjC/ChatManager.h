@@ -1,18 +1,17 @@
 //
-//  IPMessagingManager.h
-//  Twilio IP Messaging Demo
+//  ChatManager.h
+//  Twilio Chat Demo
 //
 //  Copyright (c) 2011-2016 Twilio. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
 
-#import <TwilioIPMessagingClient/TwilioIPMessagingClient.h>
-#import <TwilioCommon/TwilioCommon.h>
+#import <TwilioChatClient/TwilioChatClient.h>
 
-@interface IPMessagingManager : NSObject
+@interface ChatManager : NSObject
 
-@property (nonatomic, strong, readonly) TwilioIPMessagingClient *client;
+@property (nonatomic, strong, readonly) TwilioChatClient *client;
 
 + (instancetype)sharedManager;
 

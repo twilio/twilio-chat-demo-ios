@@ -1,6 +1,6 @@
 //
 //  ChannelViewController.m
-//  Twilio IP Messaging Demo
+//  Twilio Chat Demo
 //
 //  Copyright (c) 2011-2016 Twilio. All rights reserved.
 //
@@ -10,7 +10,7 @@
 #import "MemberTypingTableViewCell.h"
 #import "SeenByTableViewCell.h"
 #import "DemoHelpers.h"
-#import "IPMessagingManager.h"
+#import "ChatManager.h"
 #import "ReactionView.h"
 #import "UserListViewController.h"
 
@@ -21,16 +21,21 @@ static NSString * const kChannelDataTypeUserConsumption = @"userConsumption";
 static NSString * const kChannelDataTypeMembersTyping = @"membersTyping";
 static NSString * const kChannelDataData = @"channelDataData";
 
-@interface ChannelViewController () <UITableViewDataSource, UITableViewDelegate, TWMChannelDelegate, UITextFieldDelegate, UIPopoverPresentationControllerDelegate, MessageTableViewCellDelegate>
+static const NSUInteger kInitialMessageCountToLoad = 20;
+static const NSUInteger kMoreMessageCountToLoad = 50;
+
+@interface ChannelViewController () <UITableViewDataSource, UITableViewDelegate, TCHChannelDelegate, UITextFieldDelegate, UIPopoverPresentationControllerDelegate, MessageTableViewCellDelegate>
 @property (nonatomic, weak) IBOutlet UITableView *tableView;
 @property (weak, nonatomic) IBOutlet UITextField *messageInput;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *keyboardAdjustmentConstraint;
 
-@property (nonatomic, strong) NSMutableOrderedSet<TWMMessage *> *messages;
+@property (nonatomic, strong) NSMutableOrderedSet<TCHMessage *> *messages;
+@property (nonatomic, assign) BOOL mightHaveMoreMessages;
+@property (nonatomic, assign) BOOL loadingMoreMessages;
 @property (nonatomic, strong) NSMutableArray<id> *channelData;
 @property (nonatomic, strong) NSMutableArray *typingUsers;
 @property (nonatomic, copy) NSNumber *userConsumedIndex;
-@property (nonatomic, strong) NSDictionary<NSNumber *, NSArray<TWMMember *> *> *seenBy;
+@property (nonatomic, strong) NSDictionary<NSNumber *, NSArray<TCHMember *> *> *seenBy;
 
 @property (nonatomic, strong) NSMutableDictionary<NSIndexPath *, NSNumber *> *cachedHeights;
 @end
@@ -57,9 +62,11 @@ static NSString * const kChannelDataData = @"channelDataData";
     self.messages = [[NSMutableOrderedSet alloc] init];
     self.typingUsers = [NSMutableArray array];
     self.cachedHeights = [NSMutableDictionary dictionary];
+    self.mightHaveMoreMessages = YES;
+    self.loadingMoreMessages = NO;
 }
 
-- (void)updateChannel {
+- (void)populateConsumptionHorizonData {
     NSNumber *lastConsumedMessageIndex = [self.channel.messages lastConsumedMessageIndex];
     
     if (lastConsumedMessageIndex && ![[[self.messages lastObject] index] isEqualToNumber:lastConsumedMessageIndex]) {
@@ -69,25 +76,27 @@ static NSString * const kChannelDataData = @"channelDataData";
 }
 
 - (void)refreshSeenBy {
-    NSMutableDictionary *seenBy = [NSMutableDictionary dictionary];
-    for (TWMMember *member in [self.channel.members allObjects]) {
-        if (![self isMe:member]) {
-            NSNumber *index = [member lastConsumedMessageIndex];
-            if (index) {
-                NSMutableArray *members = seenBy[index];
-                if (!members) {
-                    members = [NSMutableArray array];
-                    seenBy[index] = members;
-                }
-                if (![members containsObject:member]) {
-                    [members addObject:member];
+    [self.channel.members membersWithCompletion:^(TCHResult *result, TCHMemberPaginator *paginator) {
+        NSMutableDictionary *seenBy = [NSMutableDictionary dictionary];
+        for (TCHMember *member in paginator.items) {
+            if (![self isMe:member]) {
+                NSNumber *index = [member lastConsumedMessageIndex];
+                if (index) {
+                    NSMutableArray *members = seenBy[index];
+                    if (!members) {
+                        members = [NSMutableArray array];
+                        seenBy[index] = members;
+                    }
+                    if (![members containsObject:member]) {
+                        [members addObject:member];
+                    }
                 }
             }
         }
-    }
-
-    self.seenBy = seenBy;
-    [self rebuildData];
+        
+        self.seenBy = seenBy;
+        [self rebuildData];
+    }];
 }
 
 - (void)viewDidLoad {
@@ -107,7 +116,6 @@ static NSString * const kChannelDataData = @"channelDataData";
     [super viewWillAppear:animated];
     if (self.channel) {
         self.channel.delegate = self;
-        [self loadMessages];
         
         [[NSNotificationCenter defaultCenter] addObserver:self
                                                  selector:@selector(keyboardWillShow:)
@@ -133,19 +141,9 @@ static NSString * const kChannelDataData = @"channelDataData";
     
     [self scrollToLastConsumedMessage];
     
-    // load up the rest of the history for the channel
-    TWMMessage *firstMessage = [self.messages firstObject];
-    if (firstMessage && [firstMessage.index integerValue] > 0) {
-        [self.channel.messages getMessagesBefore:([firstMessage.index integerValue] - 1)
-                                       withCount:UINT_MAX
-                                      completion:^(TWMResult *result, NSArray<TWMMessage *> *messages) {
-                                          NSIndexSet *indexes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, messages.count)];
-                                          [self.messages insertObjects:messages
-                                                             atIndexes:indexes];
-                                          [self rebuildData];
-                                          [self scrollToLastConsumedMessage];
-        }];
-    }
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        self.userConsumedIndex = nil;
+    });
 }
 
 - (void)viewWillDisappear:(BOOL)animated {
@@ -157,12 +155,11 @@ static NSString * const kChannelDataData = @"channelDataData";
     }
 }
 
-- (void)setChannel:(TWMChannel *)channel {
+- (void)setChannel:(TCHChannel *)channel {
     _channel = channel;
     self.channel.delegate = self;
 
-    [self loadMessages];
-    [self updateChannel];
+    [self loadInitialMessages];
 }
 
 - (void)messageActions:(UIGestureRecognizer *)gestureRecognizer {
@@ -172,7 +169,7 @@ static NSString * const kChannelDataData = @"channelDataData";
 
     CGPoint point = [gestureRecognizer locationInView:self.tableView];
     NSIndexPath *indexPath = [self.tableView indexPathForRowAtPoint:point];
-    TWMMessage *message = [self messageForIndexPath:indexPath];
+    TCHMessage *message = [self messageForIndexPath:indexPath];
 
     UIAlertController *actionsSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     [self configurePopoverPresentationController:actionsSheet.popoverPresentationController];
@@ -274,11 +271,6 @@ static NSString * const kChannelDataData = @"channelDataData";
 
 #pragma mark - UITableViewDataSource
 
-- (BOOL)showNewest {
-    return (self.userConsumedIndex &&
-            [self.userConsumedIndex integerValue] < [[[[self messages] lastObject] index] integerValue]);
-}
-
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     NSInteger count = [self channelData].count;
     if (self.typingUsers.count > 0) {
@@ -294,13 +286,13 @@ static NSString * const kChannelDataData = @"channelDataData";
     return [NSString stringWithFormat:@"%@ %@ typing...", membersString, typingUsers.count > 1 ? @"are" : @"is"];
 }
 
-- (NSString *)pluralizeListOfMembers:(NSArray<TWMMember *> *)members {
+- (NSString *)pluralizeListOfMembers:(NSArray<TCHMember *> *)members {
     if (!members || [members count] == 0) {
         return @"";
     }
     
     NSMutableArray *memberDisplayNames = [NSMutableArray array];
-    for (TWMMember *member in members) {
+    for (TCHMember *member in members) {
         [memberDisplayNames addObject:[DemoHelpers displayNameForMember:member]];
     }
     [memberDisplayNames sortUsingSelector:@selector(caseInsensitiveCompare:)];
@@ -322,25 +314,26 @@ static NSString * const kChannelDataData = @"channelDataData";
 - (void)rebuildData {
     NSMutableArray<id> *newData = [NSMutableArray arrayWithArray:[self.messages array]];
     NSArray *consumptionKeys = [[[self seenBy] allKeys] sortedArrayUsingSelector:@selector(compare:)];
-
+    NSPredicate *messageWithIndexFilter = [NSPredicate predicateWithFormat:@"self.index <= $index"];
+    
     if (newData.count > 0) {
         if (self.userConsumedIndex) {
-            TWMMessage *consumptionMessage = [[[self channel] messages] messageForConsumptionIndex:self.userConsumedIndex];
-            if (consumptionMessage) {
-                NSUInteger ndx = [newData indexOfObject:consumptionMessage];
-                if (ndx != (newData.count - 1)) {
-                    [newData insertObject:@{
-                                            kChannelDataType: kChannelDataTypeUserConsumption
-                                            }
-                                  atIndex:ndx+1];
-                }
+            NSPredicate *filter = [messageWithIndexFilter predicateWithSubstitutionVariables:@{@"index": self.userConsumedIndex}];
+            id targetItem = [[newData filteredArrayUsingPredicate:filter] lastObject];
+            if (targetItem) {
+                NSUInteger ndx = [newData indexOfObject:targetItem];
+                [newData insertObject:@{
+                                        kChannelDataType: kChannelDataTypeUserConsumption
+                                        }
+                              atIndex:ndx+1];
             }
         }
         
         for (NSNumber *consumptionIndex in consumptionKeys) {
-            TWMMessage *consumptionMessage = [[[self channel] messages] messageForConsumptionIndex:consumptionIndex];
-            if (consumptionMessage) {
-                NSUInteger ndx = [newData indexOfObject:consumptionMessage];
+            NSPredicate *filter = [messageWithIndexFilter predicateWithSubstitutionVariables:@{@"index": consumptionIndex}];
+            id targetItem = [[newData filteredArrayUsingPredicate:filter] lastObject];
+            if (targetItem) {
+                NSUInteger ndx = [newData indexOfObject:targetItem];
                 [newData insertObject:@{
                                         kChannelDataType: kChannelDataTypeMemberConsumption,
                                         kChannelDataData: self.seenBy[consumptionIndex]
@@ -366,7 +359,7 @@ static NSString * const kChannelDataData = @"channelDataData";
     id data = self.channelData[row];
     if ([data isKindOfClass:[NSDictionary class]]) {
         ret = data;
-    } else if ([data isKindOfClass:[TWMMessage class]]) {
+    } else if ([data isKindOfClass:[TCHMessage class]]) {
         ret = @{
                 kChannelDataType: kChannelDataTypeMessage,
                 kChannelDataData: data
@@ -399,7 +392,7 @@ static NSString * const kChannelDataData = @"channelDataData";
         cell = consumptionCell;
     } else if ([data[kChannelDataType] isEqualToString:kChannelDataTypeMessage]) {
         MessageTableViewCell *messageCell = [tableView dequeueReusableCellWithIdentifier:@"message"];
-        TWMMessage *message = data[kChannelDataData];
+        TCHMessage *message = data[kChannelDataData];
 
         messageCell.channel = self.channel;
         messageCell.message = message;
@@ -409,6 +402,8 @@ static NSString * const kChannelDataData = @"channelDataData";
         [messageCell layoutIfNeeded];
         
         cell = messageCell;
+    } else {
+        cell = [[UITableViewCell alloc] initWithFrame:CGRectZero];
     }
 
     return cell;
@@ -423,6 +418,10 @@ shouldHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
 
 - (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
     self.cachedHeights[indexPath] = @(cell.frame.size.height);
+    
+    if (indexPath.row == 0) {
+        [self loadMoreMessages];
+    }
 }
 
 - (void)tableView:(UITableView *)tableView
@@ -453,10 +452,10 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     if (textField.text.length == 0) {
         [self.view endEditing:YES];
     } else {
-        TWMMessage *message = [self.channel.messages createMessageWithBody:textField.text];
+        TCHMessage *message = [self.channel.messages createMessageWithBody:textField.text];
         textField.text = @"";
         [self.channel.messages sendMessage:message
-                                completion:^(TWMResult *result) {
+                                completion:^(TCHResult *result) {
                                     if (!result.isSuccessful) {
                                         [DemoHelpers displayToastWithMessage:@"Failed to send message." inView:self.view];
                                         NSLog(@"%s: %@", __FUNCTION__, result.error);
@@ -477,7 +476,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     __weak __typeof(self) weakSelf = self;
     void (^action)(NSString *) = ^void(NSString *newValue) {
         [self.channel setFriendlyName:newValue
-                           completion:^(TWMResult *result) {
+                           completion:^(TCHResult *result) {
                                if (result.isSuccessful) {
                                    [DemoHelpers displayToastWithMessage:@"Friendly name changed."
                                                                  inView:weakSelf.view];
@@ -497,7 +496,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (void)changeMyFriendlyName {
-    TwilioIPMessagingClient *client = [[IPMessagingManager sharedManager] client];
+    TwilioChatClient *client = [[ChatManager sharedManager] client];
     NSString *title = @"My Friendly Name";
     NSString *placeholder = @"Friendly Name";
     NSString *initialValue = [[client userInfo] friendlyName];
@@ -506,7 +505,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     __weak __typeof(self) weakSelf = self;
     void (^action)(NSString *) = ^void(NSString *newValue) {
         [[client userInfo] setFriendlyName:newValue
-                                completion:^(TWMResult *result) {
+                                completion:^(TCHResult *result) {
                                     if (result.isSuccessful) {
                                         [DemoHelpers displayToastWithMessage:@"My friendly name changed."
                                                                       inView:weakSelf.view];
@@ -526,7 +525,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (void)changeAvatarEmail {
-    TwilioIPMessagingClient *client = [[IPMessagingManager sharedManager] client];
+    TwilioChatClient *client = [[ChatManager sharedManager] client];
     NSMutableDictionary<NSString *, id> *attributes = [[[client userInfo] attributes] mutableCopy];
     NSString *title = @"Avatar Email Address";
     NSString *placeholder = @"Email Address";
@@ -537,7 +536,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     void (^action)(NSString *) = ^void(NSString *newValue) {
         attributes[@"email"] = newValue;
         [[client userInfo] setAttributes:attributes
-                              completion:^(TWMResult *result) {
+                              completion:^(TCHResult *result) {
                                   if (result.isSuccessful) {
                                       [DemoHelpers displayToastWithMessage:@"Avatar email changed."
                                                                     inView:weakSelf.view];
@@ -570,7 +569,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
         }
         attributes[@"topic"] = newValue;
         [self.channel setAttributes:attributes
-                         completion:^(TWMResult *result) {
+                         completion:^(TCHResult *result) {
                              if (result.isSuccessful) {
                                  [DemoHelpers displayToastWithMessage:@"Topic changed."
                                                                inView:weakSelf.view];
@@ -598,7 +597,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     __weak __typeof(self) weakSelf = self;
     void (^action)(NSString *) = ^void(NSString *newValue) {
         [self.channel setUniqueName:newValue
-                         completion:^(TWMResult *result) {
+                         completion:^(TCHResult *result) {
                              if (result.isSuccessful) {
                                  [DemoHelpers displayToastWithMessage:@"Unique Name changed."
                                                                inView:weakSelf.view];
@@ -617,7 +616,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
                        action:action];
 }
 
-- (void)changeMessage:(TWMMessage *)message {
+- (void)changeMessage:(TCHMessage *)message {
     NSString *title = @"Message";
     NSString *placeholder = @"Message";
     NSString *initialValue = [message body];
@@ -626,7 +625,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     __weak __typeof(self) weakSelf = self;
     void (^action)(NSString *) = ^void(NSString *newValue) {
         [message updateBody:newValue
-                 completion:^(TWMResult *result) {
+                 completion:^(TCHResult *result) {
                      if (result.isSuccessful) {
                          [DemoHelpers displayToastWithMessage:@"Body changed."
                                                        inView:weakSelf.view];
@@ -645,14 +644,14 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
                        action:action];
 }
 
-- (void)addReactionToMessage:(TWMMessage *)message {
+- (void)addReactionToMessage:(TCHMessage *)message {
     UIAlertController *actionsSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     [self configurePopoverPresentationController:actionsSheet.popoverPresentationController];
     
     void (^addReaction)(NSString *) = ^(NSString *emojiString) {
         [DemoHelpers reactionIncrement:emojiString
                                message:message
-                                  user:[[[IPMessagingManager sharedManager] client] userInfo].identity];
+                                  user:[[[ChatManager sharedManager] client] userInfo].identity];
     };
     
     NSDictionary *emoji = [ReactionView emojis];
@@ -688,7 +687,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
         }
         
         [self.channel.members inviteByIdentity:newValue
-                                    completion:^(TWMResult *result) {
+                                    completion:^(TCHResult *result) {
                                         if (result.isSuccessful) {
                                             [DemoHelpers displayToastWithMessage:@"User invited."
                                                                           inView:weakSelf.view];
@@ -720,7 +719,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
         }
         
         [self.channel.members addByIdentity:newValue
-                                 completion:^(TWMResult *result) {
+                                 completion:^(TCHResult *result) {
                                      if (result.isSuccessful) {
                                          [DemoHelpers displayToastWithMessage:@"User added."
                                                                        inView:weakSelf.view];
@@ -740,11 +739,13 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (void)listMembers {
-    [self displayUsersList:self.channel.members.allObjects caption:@"Channel Members"];
+    [self.channel.members membersWithCompletion:^(TCHResult *result, TCHMemberPaginator *paginator) {
+        [self displayUsersList:paginator.items caption:@"Channel Members"];
+    }];
 }
 
 - (void)leaveChannel {
-    [self.channel leaveWithCompletion:^(TWMResult *result) {
+    [self.channel leaveWithCompletion:^(TCHResult *result) {
         if (result.isSuccessful) {
             [self performSegueWithIdentifier:@"returnToChannels" sender:nil];
         } else {
@@ -754,8 +755,8 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     }];
 }
 
-- (void)destroyMessage:(TWMMessage *)message {
-    [self.channel.messages removeMessage:message completion:^(TWMResult *result) {
+- (void)destroyMessage:(TCHMessage *)message {
+    [self.channel.messages removeMessage:message completion:^(TCHResult *result) {
         if (result.isSuccessful) {
             [self rebuildData];
         } else {
@@ -813,12 +814,62 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     [self.view setNeedsLayout];
 }
 
-- (void)loadMessages {
-    [self.messages removeAllObjects];
-    [self addMessages:self.channel.messages.allObjects];
+- (void)loadInitialMessages {
+    [self.channel.messages getLastMessagesWithCount:kInitialMessageCountToLoad
+                                         completion:^(TCHResult *result, NSArray<TCHMessage *> *messages) {
+                                             [self addMessages:messages];
+                                             [self populateConsumptionHorizonData];
+                                             [self scrollToLastConsumedMessage];
+                                         }];
 }
 
-- (void)addMessages:(NSArray<TWMMessage *> *)messages {
+- (void)loadMoreMessages {
+    if (!self.mightHaveMoreMessages || self.loadingMoreMessages) {
+        return;
+    }
+    
+    TCHMessage *firstMessage = [self.messages firstObject];
+    NSUInteger batchSize = kMoreMessageCountToLoad;
+    if (firstMessage && [firstMessage.index integerValue] > 0) {
+        self.loadingMoreMessages = YES;
+        
+        __block id currentItem = nil;
+        NSIndexPath *topIndexPath = [[self.tableView indexPathsForVisibleRows] firstObject];
+        if (topIndexPath.row > 0) {
+            NSIndexPath *bottomIndexPath = [[self.tableView indexPathsForVisibleRows] lastObject];
+            currentItem = self.channelData[bottomIndexPath.row];
+        } else {
+            currentItem = [self.messages firstObject];
+        }
+        
+        [self.channel.messages getMessagesBefore:([firstMessage.index integerValue] - 1)
+                                       withCount:batchSize
+                                      completion:^(TCHResult *result, NSArray<TCHMessage *> *messages) {
+                                          if ([result isSuccessful] && messages != nil) {
+                                              if (messages.count < batchSize) {
+                                                  self.mightHaveMoreMessages = NO;
+                                              }
+                                              
+                                              NSIndexSet *indexes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, messages.count)];
+                                              [self.messages insertObjects:messages
+                                                                 atIndexes:indexes];
+                                              [self rebuildData];
+                                              NSUInteger targetIndex = [[self channelData] indexOfObject:currentItem];
+                                              if (targetIndex > 0) {
+                                                  targetIndex -= 1;
+                                              }
+                                              [self scrollToIndex:targetIndex position:UITableViewScrollPositionTop];
+                                          } else {
+                                              [DemoHelpers displayToastWithMessage:@"Failed to load more messages." inView:self.view];
+                                              NSLog(@"%s: %@", __FUNCTION__, result.error);
+                                          }
+
+                                          self.loadingMoreMessages = NO;
+                                      }];
+    }
+}
+
+- (void)addMessages:(NSArray<TCHMessage *> *)messages {
     [self.messages addObjectsFromArray:messages];
     [self sortMessages];
     [self rebuildData];
@@ -835,7 +886,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     return nearBottom;
 }
 
-- (void)removeMessages:(NSArray<TWMMessage *> *)messages {
+- (void)removeMessages:(NSArray<TCHMessage *> *)messages {
     [self.messages removeObjectsInArray:messages];
     [self sortMessages];
     [self rebuildData];
@@ -850,12 +901,15 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     }
     
     NSNumber *lastConsumedMessage = [[[self channel] messages] lastConsumedMessageIndex];
-    NSUInteger targetIndex = 0;
-    if (!lastConsumedMessage) {
-        targetIndex = self.channelData.count - 1;
-    } else {
-        TWMMessage *message = [[[self channel] messages] messageForConsumptionIndex:lastConsumedMessage];
-        targetIndex = [[self channelData] indexOfObject:message];
+    NSUInteger targetIndex = self.channelData.count - 1;
+    if (lastConsumedMessage) {
+        if (self.userConsumedIndex) {
+            NSPredicate *filter = [NSPredicate predicateWithFormat:@"self.index <= %@", self.userConsumedIndex];
+            TCHMessage *targetItem = [[self.channelData filteredArrayUsingPredicate:filter] lastObject];
+            if (targetItem) {
+                targetIndex = [[self channelData] indexOfObject:targetItem];
+            }
+        }
     }
 
     [self scrollToIndex:targetIndex position:UITableViewScrollPositionTop];
@@ -873,7 +927,8 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
         messagesCount++;
     }
     
-    [self scrollToIndex:messagesCount - 1 position:UITableViewScrollPositionBottom];
+    NSUInteger targetIndex = messagesCount - 1;
+    [self scrollToIndex:targetIndex position:UITableViewScrollPositionBottom];
 }
 
 - (void)scrollToIndex:(NSUInteger)targetIndex position:(UITableViewScrollPosition)position {
@@ -896,7 +951,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
                                                                       ascending:YES]]];
 }
 
-- (TWMMessage *)messageForIndexPath:(nonnull NSIndexPath *)indexPath {
+- (TCHMessage *)messageForIndexPath:(nonnull NSIndexPath *)indexPath {
     NSDictionary *data = [self dataForRow:indexPath.row];
     if ([data[kChannelDataType] isEqualToString:kChannelDataTypeMessage]) {
         return data[kChannelDataData];
@@ -904,8 +959,8 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     return nil;
 }
 
-- (BOOL)isMe:(TWMMember *)member {
-    return ([member userInfo] == [[[IPMessagingManager sharedManager] client] userInfo]);
+- (BOOL)isMe:(TCHMember *)member {
+    return ([member userInfo] == [[[ChatManager sharedManager] client] userInfo]);
 }
 
 - (void)displayUsersList:(NSArray *)users caption:(NSString *)caption {
@@ -953,47 +1008,41 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 
 #pragma mark - TMChannelDelegate
 
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-           channelChanged:(TWMChannel *)channel {
+- (void)chatClient:(TwilioChatClient *)client
+    channelChanged:(TCHChannel *)channel {
     [self rebuildData];
 }
-
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-           channelDeleted:(TWMChannel *)channel {
+    
+- (void)chatClient:(TwilioChatClient *)client
+    channelDeleted:(TCHChannel *)channel {
     if (channel == self.channel) {
         [self performSegueWithIdentifier:@"returnToChannels" sender:nil];
     }
 }
-
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-     channelHistoryLoaded:(TWMChannel *)channel {
-    [self loadMessages];
-    [self rebuildData];
-}
-
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-                  channel:(TWMChannel *)channel
-             memberJoined:(TWMMember *)member {
+    
+- (void)chatClient:(TwilioChatClient *)client
+           channel:(TCHChannel *)channel
+      memberJoined:(TCHMember *)member {
     [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ joined the channel.", [DemoHelpers displayNameForMember:member]]
                                   inView:self.view];
 }
-
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-                  channel:(TWMChannel *)channel
-            memberChanged:(TWMMember *)member {
+    
+- (void)chatClient:(TwilioChatClient *)client
+           channel:(TCHChannel *)channel
+     memberChanged:(TCHMember *)member {
     [self refreshSeenBy];
 }
-
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-                  channel:(TWMChannel *)channel
-                   member:(TWMMember *)member
-                 userInfo:(TWMUserInfo *)userInfo
-                  updated:(TWMUserInfoUpdate)updated {
-    if (updated == TWMUserInfoUpdateFriendlyName) {
+    
+- (void)chatClient:(TwilioChatClient *)client
+           channel:(TCHChannel *)channel
+            member:(TCHMember *)member
+          userInfo:(TCHUserInfo *)userInfo
+           updated:(TCHUserInfoUpdate)updated {
+    if (updated == TCHUserInfoUpdateFriendlyName) {
         [self rebuildData];
-    } else if (updated == TWMUserInfoUpdateAttributes ||
-               updated == TWMUserInfoUpdateReachabilityOnline ||
-               updated == TWMUserInfoUpdateReachabilityNotifiable) {
+    } else if (updated == TCHUserInfoUpdateAttributes ||
+               updated == TCHUserInfoUpdateReachabilityOnline ||
+               updated == TCHUserInfoUpdateReachabilityNotifiable) {
         NSMutableArray *pathsToUpdate = [NSMutableArray array];
         for (NSIndexPath *indexPath in self.tableView.indexPathsForVisibleRows) {
             if ([[self messageForIndexPath:indexPath].author isEqualToString:member.userInfo.identity]) {
@@ -1004,46 +1053,46 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
                               withRowAnimation:UITableViewRowAnimationFade];
     }
 }
-
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-                  channel:(TWMChannel *)channel
-               memberLeft:(TWMMember *)member {
+    
+- (void)chatClient:(TwilioChatClient *)client
+           channel:(TCHChannel *)channel
+        memberLeft:(TCHMember *)member {
     [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ left the channel.", [DemoHelpers displayNameForMember:member]]
                                   inView:self.view];
 }
-
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-                  channel:(TWMChannel *)channel
-             messageAdded:(TWMMessage *)message {
+    
+- (void)chatClient:(TwilioChatClient *)client
+           channel:(TCHChannel *)channel
+      messageAdded:(TCHMessage *)message {
     [self addMessages:@[message]];
 }
-
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-                  channel:(TWMChannel *)channel
-           messageDeleted:(TWMMessage *)message {
+    
+- (void)chatClient:(TwilioChatClient *)client
+           channel:(TCHChannel *)channel
+    messageDeleted:(TCHMessage *)message {
     [self removeMessages:@[message]];
     [self refreshSeenBy];
 }
-
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-                  channel:(TWMChannel *)channel
-           messageChanged:(TWMMessage *)message {
+    
+- (void)chatClient:(TwilioChatClient *)client
+           channel:(TCHChannel *)channel
+    messageChanged:(TCHMessage *)message {
     [self rebuildData];
 }
-
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-   typingStartedOnChannel:(TWMChannel *)channel
-                   member:(TWMMember *)member {
+    
+- (void)chatClient:(TwilioChatClient *)client
+typingStartedOnChannel:(TCHChannel *)channel
+            member:(TCHMember *)member {
     [self.typingUsers addObject:member];
     [self rebuildData];
     if ([self isNearBottom]) {
         [self scrollToBottomMessage];
     }
 }
-
-- (void)ipMessagingClient:(TwilioIPMessagingClient *)client
-     typingEndedOnChannel:(TWMChannel *)channel
-                   member:(TWMMember *)member {
+    
+- (void)chatClient:(TwilioChatClient *)client
+typingEndedOnChannel:(TCHChannel *)channel
+            member:(TCHMember *)member {
     [self.typingUsers removeObject:member];
     [self rebuildData];
     if ([self isNearBottom]) {
@@ -1054,21 +1103,21 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 #pragma mark - MessageTableViewCellDelegate
 
 - (void)reactionIncremented:(NSString *)emojiString
-                    message:(TWMMessage *)message {
+                    message:(TCHMessage *)message {
     [DemoHelpers reactionIncrement:emojiString
                            message:message
                               user:self.localIdentity];
 }
 
 - (void)reactionDecremented:(NSString *)emojiString
-                    message:(TWMMessage *)message {
+                    message:(TCHMessage *)message {
     [DemoHelpers reactionDecrement:emojiString
                            message:message
                               user:self.localIdentity];
 }
 
 - (void)showUsersForReaction:(NSString *)emojiString
-                     message:(TWMMessage *)message {
+                     message:(TCHMessage *)message {
     NSDictionary *attributes = message.attributes;
     if (!attributes) {
         return;
@@ -1098,7 +1147,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 - (NSArray *)membersListFromIdentities:(NSArray *)identities {
     NSMutableArray *ret = [NSMutableArray array];
     for (NSString *identity in identities) {
-        TWMMember *member = [self.channel memberWithIdentity:identity];
+        TCHMember *member = [self.channel memberWithIdentity:identity];
         if (member) {
             [ret addObject:member];
         } else {
@@ -1109,7 +1158,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (NSString *)localIdentity {
-    TWMUserInfo *localUserInfo = [[[IPMessagingManager sharedManager] client] userInfo];
+    TCHUserInfo *localUserInfo = [[[ChatManager sharedManager] client] userInfo];
     return localUserInfo.identity;
 }
 

@@ -1,6 +1,6 @@
 //
 //  DemoHelpers.m
-//  Twilio IP Messaging Demo
+//  Twilio Chat Demo
 //
 //  Copyright (c) 2011-2016 Twilio. All rights reserved.
 //
@@ -146,7 +146,7 @@
                      }];
 }
 
-+ (NSString *)displayNameForMember:(TWMMember *)member {
++ (NSString *)displayNameForMember:(TCHMember *)member {
     NSString *displayName = nil;
     NSString *friendlyName = [[member userInfo] friendlyName];
     if (![friendlyName isEqualToString:@""]) {
@@ -181,7 +181,7 @@
     return [self avatarForEmail:nil identity:author size:size scalingFactor:scale];
 }
 
-+ (UIImage *)avatarForUserInfo:(TWMUserInfo *)userInfo
++ (UIImage *)avatarForUserInfo:(TCHUserInfo *)userInfo
                           size:(NSUInteger)size
                  scalingFactor:(CGFloat)scale {
     NSString *email = userInfo.attributes[@"email"];
@@ -228,7 +228,7 @@
                                                                                  kCFPropertyListMutableContainers));
 }
 
-+ (void)reactionIncrement:(NSString *)emojiString message:(TWMMessage *)message user:(NSString *)identity {
++ (void)reactionIncrement:(NSString *)emojiString message:(TCHMessage *)message user:(NSString *)identity {
     NSMutableDictionary *attributes = [DemoHelpers deepMutableCopyOfDictionary:message.attributes];
     if (!attributes) {
         attributes = [NSMutableDictionary dictionary];
@@ -239,7 +239,7 @@
         [reactionDict[@"users"] addObject:identity];
         
         [message setAttributes:attributes
-                    completion:^(TWMResult *result) {
+                    completion:^(TCHResult *result) {
                         if (!result.isSuccessful) {
                             NSLog(@"error occurred incrementing reaction: %@", emojiString);
                         }
@@ -247,7 +247,7 @@
     }
 }
 
-+ (void)reactionDecrement:(NSString *)emojiString message:(TWMMessage *)message user:(NSString *)identity {
++ (void)reactionDecrement:(NSString *)emojiString message:(TCHMessage *)message user:(NSString *)identity {
     NSMutableDictionary *attributes = [DemoHelpers deepMutableCopyOfDictionary:message.attributes];
     if (!attributes) {
         attributes = [NSMutableDictionary dictionary];
@@ -263,7 +263,7 @@
         }
         
         [message setAttributes:attributes
-                    completion:^(TWMResult *result) {
+                    completion:^(TCHResult *result) {
                         if (!result.isSuccessful) {
                             NSLog(@"error occurred decrementing reaction: %@", emojiString);
                         }

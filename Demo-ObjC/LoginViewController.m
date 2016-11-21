@@ -1,13 +1,13 @@
 //
 //  LoginViewController.m
-//  Twilio IP Messaging Demo
+//  Twilio Chat Demo
 //
 //  Copyright (c) 2011-2016 Twilio. All rights reserved.
 //
 
 #import "AppDelegate.h"
 #import "LoginViewController.h"
-#import "IPMessagingManager.h"
+#import "ChatManager.h"
 
 @interface LoginViewController () <UITextFieldDelegate>
 @property (weak, nonatomic) IBOutlet UITextField *nameTextField;
@@ -26,8 +26,8 @@
 
 - (IBAction)loginTapped:(id)sender {
     if (self.nameTextField.text && [self.nameTextField.text length] > 0) {
-        [[IPMessagingManager sharedManager] loginWithIdentity:self.nameTextField.text];
-        [[IPMessagingManager sharedManager] presentRootViewController];
+        [[ChatManager sharedManager] loginWithIdentity:self.nameTextField.text];
+        [[ChatManager sharedManager] presentRootViewController];
     }
 }
 
