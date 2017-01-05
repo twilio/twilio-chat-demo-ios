@@ -11,8 +11,6 @@ What you'll minimally need to get started:
 - [How to create tokens](https://www.twilio.com/docs/api/chat/guides/create-tokens)
 - The .framework file from the [Chat client for iOS distribution](https://www.twilio.com/docs/api/chat/sdks)
 
-(Note: The Chat Service is presently in private beta - if you are not part of the beta, the above links will not successfully load.)
-
 The first step is to bring the .framework into the project.  The easiest way to do this is to find the .framework in the tar.bz distribution and drag-n-drop it into the target's Embedded Frameworks section on the General settings tab.
 
 Next, in the ChatManager.m file, find the line that Xcode will let you know is an error.  Delete that #error line and fill in a client token in the line below:
