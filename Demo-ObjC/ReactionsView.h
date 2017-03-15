@@ -3,7 +3,7 @@
 //  Demo-ObjC
 //
 //  Created by Randy Beiter on 6/26/16.
-//  Copyright © 2016 Twilio. All rights reserved.
+//  Copyright (c) 2017 Twilio, Inc. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
