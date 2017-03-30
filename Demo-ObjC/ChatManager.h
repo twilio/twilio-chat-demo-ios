@@ -21,6 +21,7 @@
 - (BOOL)loginWithIdentity:(NSString *)identity;
 - (void)logout;
 
+- (void)updateChatClient;
 - (void)updatePushToken:(NSData *)token;
 - (void)receivedNotification:(NSDictionary *)notification;
 

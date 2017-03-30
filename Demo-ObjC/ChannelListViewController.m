@@ -561,6 +561,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 
 - (void)chatClient:(TwilioChatClient *)client synchronizationStatusChanged:(TCHClientSynchronizationStatus)status {
     if (status == TCHClientSynchronizationStatusCompleted) {
+        [[ChatManager sharedManager] updateChatClient];
         [self populateChannels];
     }
 }
@@ -590,6 +591,10 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 
 - (void)chatClient:(TwilioChatClient *)client toastRegistrationFailedWithError:(TCHError *)error {
     // you can bring failures in registration for pushes to user's attention here
+}
+
+- (void)chatClient:(TwilioChatClient *)client notificationUpdatedBadgeCount:(NSUInteger)badgeCount {
+    [[UIApplication sharedApplication] setApplicationIconBadgeNumber:badgeCount];
 }
 
 @end
