@@ -10,7 +10,7 @@
 
 #import <TwilioAccessManager/TwilioAccessManager.h>
 
-@interface ChatManager() <TwilioAccessManagerDelegate>
+@interface ChatManager() <TwilioAccessManagerDelegate, TwilioChatClientDelegate>
 @property (nonatomic, strong) TwilioAccessManager *accessManager;
 @property (nonatomic, strong) TwilioChatClient *client;
 
@@ -65,7 +65,7 @@
     properties.initialMessageCount = 10;
     self.client = [TwilioChatClient chatClientWithToken:token
                                              properties:properties
-                                               delegate:nil];
+                                               delegate:self];
     self.accessManager = [TwilioAccessManager accessManagerWithToken:token
                                                             delegate:self];
 
@@ -100,14 +100,18 @@
 #pragma mark Push functionality
 
 - (void)updateChatClient {
-    if (self.lastToken) {
-        [self.client registerWithToken:self.lastToken];
-        self.lastToken = nil;
-    }
-    
-    if (self.lastNotification) {
-        [self.client handleNotification:self.lastNotification];
-        self.lastNotification = nil;
+    if (self.client &&
+        (self.client.synchronizationStatus == TCHClientSynchronizationStatusChannelsListCompleted ||
+         self.client.synchronizationStatus == TCHClientSynchronizationStatusCompleted)) {
+        if (self.lastToken) {
+            [self.client registerWithToken:self.lastToken];
+            self.lastToken = nil;
+        }
+        
+        if (self.lastNotification) {
+            [self.client handleNotification:self.lastNotification];
+            self.lastNotification = nil;
+        }
     }
 }
 
@@ -137,6 +141,17 @@
     
 - (void)accessManagerTokenInvalid:(nonnull TwilioAccessManager *)accessManager {
     NSLog(@"error in token");
+}
+
+#pragma mark - TwilioChatClientDelegate temporary impl until channels list takes over
+
+// Can occur before we transfer the delegate to the channels list VC
+- (void)chatClient:(TwilioChatClient *)client notificationUpdatedBadgeCount:(NSUInteger)badgeCount {
+    [[UIApplication sharedApplication] setApplicationIconBadgeNumber:badgeCount];
+}
+
+- (void)chatClient:(TwilioChatClient *)client errorReceived:(TCHError *)error {
+    NSLog(@"error received: %@", error);
 }
     
 @end
