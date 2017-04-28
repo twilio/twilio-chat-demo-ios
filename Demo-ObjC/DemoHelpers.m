@@ -146,13 +146,13 @@
                      }];
 }
 
-+ (NSString *)displayNameForMember:(TCHMember *)member {
++ (NSString *)displayNameForUser:(TCHUser *)user {
     NSString *displayName = nil;
-    NSString *friendlyName = [[member userInfo] friendlyName];
+    NSString *friendlyName = [user friendlyName];
     if (![friendlyName isEqualToString:@""]) {
         displayName = friendlyName;
     } else {
-        displayName = [[member userInfo] identity];
+        displayName = [user identity];
     }
     return displayName;
 }
@@ -181,17 +181,17 @@
     return [self avatarForEmail:nil identity:author size:size scalingFactor:scale];
 }
 
-+ (UIImage *)avatarForUserInfo:(TCHUserInfo *)userInfo
-                          size:(NSUInteger)size
-                 scalingFactor:(CGFloat)scale {
-    NSString *email = userInfo.attributes[@"email"];
-    NSString *identity = userInfo.identity;
++ (UIImage *)avatarForUser:(TCHUser *)user
+                      size:(NSUInteger)size
+             scalingFactor:(CGFloat)scale {
+    NSString *email = user.attributes[@"email"];
+    NSString *identity = user.identity;
     
     UIImage *image = [self avatarForEmail:email identity:identity size:size scalingFactor:scale];
     
-    if (userInfo.isOnline) {
+    if (user.isOnline) {
         image = [self addIndicatorToAvatar:image color:[UIColor greenColor]];
-    } else if (userInfo.isNotifiable) {
+    } else if (user.isNotifiable) {
         image = [self addIndicatorToAvatar:image color:[UIColor lightGrayColor]];
     }
     

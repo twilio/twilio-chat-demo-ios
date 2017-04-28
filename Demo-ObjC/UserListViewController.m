@@ -71,12 +71,15 @@
     
     if ([user isKindOfClass:[TCHMember class]]) {
         TCHMember *member = user;
-        cell.textLabel.text = [NSString stringWithFormat:@"%@", [DemoHelpers displayNameForMember:member]];
-        cell.imageView.image = [DemoHelpers avatarForUserInfo:member.userInfo size:44.0 scalingFactor:2.0];
-
-        if (([member userInfo] == [[[ChatManager sharedManager] client] userInfo])) {
-            [cell setBackgroundColor:[UIColor colorWithWhite:0.96f alpha:1.0f]];
-        }
+        [[[[ChatManager sharedManager] client] users] subscribedUserWithIdentity:member.identity
+                                                                      completion:^(TCHResult *result, TCHUser *user) {
+                                                                          cell.textLabel.text = [NSString stringWithFormat:@"%@", [DemoHelpers displayNameForUser:user]];
+                                                                          cell.imageView.image = [DemoHelpers avatarForUser:user size:44.0 scalingFactor:2.0];
+                                                                          
+                                                                          if ([user.identity isEqualToString:[[[[ChatManager sharedManager] client] user] identity]]) {
+                                                                              [cell setBackgroundColor:[UIColor colorWithWhite:0.96f alpha:1.0f]];
+                                                                          }
+                                                                      }];
     } else {
         NSString *userIdentity = user;
         cell.textLabel.text = [NSString stringWithFormat:@"%@", userIdentity];

@@ -17,8 +17,8 @@
 
 - (void)presentRootViewController;
 - (BOOL)hasIdentity;
-- (BOOL)loginWithStoredIdentity;
-- (BOOL)loginWithIdentity:(NSString *)identity;
+- (BOOL)loginWithStoredIdentityWithCompletion:(void(^)(BOOL success))completion;
+- (BOOL)loginWithIdentity:(NSString *)identity completion:(void(^)(BOOL success))completion;
 - (void)logout;
 
 - (void)updateChatClient;

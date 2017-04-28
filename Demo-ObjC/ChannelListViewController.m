@@ -233,7 +233,7 @@
     };
     _completion = completion;
     
-    [channelsList publicChannelsWithCompletion:completion];
+    [channelsList publicChannelDescriptorsWithCompletion:completion];
 }
 
 - (void)displayOperationsForChannel:(TCHChannel *)channel
@@ -309,55 +309,23 @@
     [self.tableView reloadData];
 
     TCHChannels *channelsList = [[[ChatManager sharedManager] client] channelsList];
-    if (channelsList) {
-        __block NSMutableOrderedSet *newChannels = [[NSMutableOrderedSet alloc] init];
-        
-        void __block (^_completion)();
-        TCHChannelPaginatorCompletion completion = ^(TCHResult *result, TCHChannelPaginator *paginator) {
-            [newChannels addObjectsFromArray:[paginator items]];
-            
-            if ([paginator hasNextPage]) {
-                [paginator requestNextPageWithCompletion:_completion];
-            } else {
-                // reached last page
-                
-                [self sortChannels:newChannels];
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    self.channels = newChannels;
-                    [self.tableView reloadData];
-                });
-            }
-        };
-        _completion = completion;
-        
-        [channelsList userChannelsWithCompletion:completion];
-    }
+    NSMutableOrderedSet<TCHChannel *> *newChannels = [[NSMutableOrderedSet alloc] init];
+    [newChannels addObjectsFromArray:[channelsList subscribedChannels]];
+    [self sortChannels:newChannels];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        self.channels = newChannels;
+        [self.tableView reloadData];
+    });
 }
 
 
 
 - (void)setAllMessagesConsumed:(TCHChannel *)channel {
-    [channel synchronizeWithCompletion:^(TCHResult *result) {
-        if ([result isSuccessful]) {
-            [channel.messages setAllMessagesConsumed];
-        } else {
-            [DemoHelpers displayToastWithMessage:@"Set all messages consumed failed."
-                                          inView:self.view];
-            NSLog(@"%s: %@", __FUNCTION__, result.error);
-        }
-    }];
+    [channel.messages setAllMessagesConsumed];
 }
 
 - (void)setNoMessagesConsumed:(TCHChannel *)channel {
-    [channel synchronizeWithCompletion:^(TCHResult *result) {
-        if ([result isSuccessful]) {
-            [channel.messages setNoMessagesConsumed];
-        } else {
-            [DemoHelpers displayToastWithMessage:@"Set no messages consumed failed."
-                                          inView:self.view];
-            NSLog(@"%s: %@", __FUNCTION__, result.error);
-        }
-    }];
+    [channel.messages setNoMessagesConsumed];
 }
 
 - (void)leaveChannel:(TCHChannel *)channel {
@@ -459,6 +427,10 @@
             case TCHChannelStatusNotParticipating:
                 channelColor = [UIColor grayColor];
                 break;
+            case TCHChannelStatusUnknown:
+                // Will not happen for synchronized channels
+                channelColor = [UIColor grayColor];
+                break;
         }
         channelCell.nameLabel.textColor = channelColor;
         channelCell.sidLabel.textColor = channelColor;
@@ -493,9 +465,7 @@
     
     if (channel.status == TCHChannelStatusJoined) {
         // synchronize will be a noop and call the completion immediately if the channel is ready
-        [channel synchronizeWithCompletion:^(TCHResult *result) {
-            [self performSegueWithIdentifier:@"viewChannel" sender:channel];
-        }];
+        [self performSegueWithIdentifier:@"viewChannel" sender:channel];
     } else {
         [self displayOperationsForChannel:channel
                           calledFromSwipe:NO];
@@ -559,7 +529,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 
 #pragma mark - TwilioChatClientDelegate
 
-- (void)chatClient:(TwilioChatClient *)client synchronizationStatusChanged:(TCHClientSynchronizationStatus)status {
+- (void)chatClient:(TwilioChatClient *)client synchronizationStatusUpdated:(TCHClientSynchronizationStatus)status {
     if (status == TCHClientSynchronizationStatusCompleted) {
         [[ChatManager sharedManager] updateChatClient];
         [self populateChannels];
@@ -572,7 +542,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     [self.tableView reloadData];
 }
 
-- (void)chatClient:(TwilioChatClient *)client channelChanged:(TCHChannel *)channel {
+- (void)chatClient:(TwilioChatClient *)client channel:(TCHChannel *)channel updated:(TCHChannelUpdate)updated {
     [self.tableView reloadData];
 }
 
@@ -585,12 +555,15 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"Error received: %@", error] inView:self.view];
 }
 
-- (void)chatClient:(TwilioChatClient *)client toastReceivedOnChannel:(TCHChannel *)channel message:(TCHMessage *)message {
-    [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"New message on channel '%@'.", channel.friendlyName] inView:self.view];
-}
-
-- (void)chatClient:(TwilioChatClient *)client toastRegistrationFailedWithError:(TCHError *)error {
-    // you can bring failures in registration for pushes to user's attention here
+- (void)chatClient:(TwilioChatClient *)client notificationNewMessageReceivedForChannelSid:(NSString *)channelSid messageIndex:(NSUInteger)messageIndex {
+    [[[[ChatManager sharedManager] client] channelsList] channelWithSidOrUniqueName:channelSid
+                                                                         completion:^(TCHResult *result, TCHChannel *channel) {
+                                                                             if (result.isSuccessful) {
+                                                                                 [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"New message on channel '%@'.", channel.friendlyName] inView:self.view];
+                                                                             } else {
+                                                                                 NSLog(@"Unable to load channel referenced in push: %@", result.error);
+                                                                             }
+                                                                         }];
 }
 
 - (void)chatClient:(TwilioChatClient *)client notificationUpdatedBadgeCount:(NSUInteger)badgeCount {

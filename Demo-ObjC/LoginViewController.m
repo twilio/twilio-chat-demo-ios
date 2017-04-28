@@ -26,8 +26,11 @@
 
 - (IBAction)loginTapped:(id)sender {
     if (self.nameTextField.text && [self.nameTextField.text length] > 0) {
-        [[ChatManager sharedManager] loginWithIdentity:self.nameTextField.text];
-        [[ChatManager sharedManager] presentRootViewController];
+        [[ChatManager sharedManager] loginWithIdentity:self.nameTextField.text completion:^(BOOL success) {
+            if (success) {
+                [[ChatManager sharedManager] presentRootViewController];
+            }
+        }];
     }
 }
 

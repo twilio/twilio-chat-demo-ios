@@ -30,30 +30,48 @@
 }
 
 - (void)presentRootViewController {
-    AppDelegate *appDelegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
-    if ([[ChatManager sharedManager] hasIdentity]) {
-        if (!self.client) {
-            [[ChatManager sharedManager] loginWithStoredIdentity];
-        }
-        appDelegate.window.rootViewController = [[UIStoryboard storyboardWithName:@"Main" bundle:[NSBundle mainBundle]] instantiateInitialViewController];
-    } else {
-        appDelegate.window.rootViewController = [[UIStoryboard storyboardWithName:@"Main" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"login"];
+    if (![[ChatManager sharedManager] hasIdentity]) {
+        [self presentLoginScreen];
+        return;
     }
+
+    if (self.client) {
+        [self presentChannelsScreen];
+        return;
+    }
+
+    [[ChatManager sharedManager] loginWithStoredIdentityWithCompletion:^(BOOL success) {
+        if (success) {
+            [self presentChannelsScreen];
+        } else {
+            [self presentLoginScreen];
+        }
+    }];
+}
+
+- (void)presentLoginScreen {
+    AppDelegate *appDelegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
+    appDelegate.window.rootViewController = [[UIStoryboard storyboardWithName:@"Main" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"login"];
+}
+
+- (void)presentChannelsScreen {
+    AppDelegate *appDelegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
+    appDelegate.window.rootViewController = [[UIStoryboard storyboardWithName:@"Main" bundle:[NSBundle mainBundle]] instantiateInitialViewController];
 }
 
 - (BOOL)hasIdentity {
     return ([self storedIdentity] && [self storedIdentity].length > 0);
 }
 
-- (BOOL)loginWithStoredIdentity {
+- (BOOL)loginWithStoredIdentityWithCompletion:(void(^)(BOOL success))completion {
     if ([self hasIdentity]) {
-        return [self loginWithIdentity:[self storedIdentity]];
+        return [self loginWithIdentity:[self storedIdentity] completion:completion];
     } else {
         return NO;
     }
 }
 
-- (BOOL)loginWithIdentity:(NSString *)identity {
+- (BOOL)loginWithIdentity:(NSString *)identity completion:(void(^)(BOOL success))completion {
     if (self.client) {
         [self logout];
     }
@@ -62,17 +80,37 @@
     
     NSString *token = [self tokenForIdentity:identity];
     TwilioChatClientProperties *properties = [[TwilioChatClientProperties alloc] init];
-    properties.initialMessageCount = 10;
-    self.client = [TwilioChatClient chatClientWithToken:token
-                                             properties:properties
-                                               delegate:self];
-    self.accessManager = [TwilioAccessManager accessManagerWithToken:token
-                                                            delegate:self];
+    __weak typeof(self) weakSelf = self;
+    [TwilioChatClient chatClientWithToken:token
+                               properties:properties
+                                 delegate:self
+                               completion:^(TCHResult *result, TwilioChatClient *chatClient) {
+                                   if ([result isSuccessful]) {
+                                       self.client = chatClient;
 
-    __weak typeof(self.client) weakClient = self.client;
-    [self.accessManager registerClient:self.client forUpdates:^(NSString * _Nonnull updatedToken) {
-        [weakClient updateToken:updatedToken];
-    }];
+                                       self.accessManager = [TwilioAccessManager accessManagerWithToken:token
+                                                                                               delegate:weakSelf];
+                                       
+                                       __weak typeof(weakSelf.client) weakClient = weakSelf.client;
+                                       [self.accessManager registerClient:self.client forUpdates:^(NSString * _Nonnull updatedToken) {
+                                           [weakClient updateToken:updatedToken completion:^(TCHResult *result) {
+                                               if (![result isSuccessful]) {
+                                                   // retry token update or warn user
+                                               }
+                                           }];
+                                       }];
+
+                                       dispatch_async(dispatch_get_main_queue(), ^{
+                                           [[ChatManager sharedManager] updateChatClient];
+                                           completion(YES);
+                                       });
+                                   } else {
+                                       // warn user
+                                       dispatch_async(dispatch_get_main_queue(), ^{
+                                           completion(NO);
+                                       });
+                                   }
+                               }];
 
     return YES;
 }
@@ -94,7 +132,7 @@
 }
 
 - (NSString *)identity {
-    return [[[self client] userInfo] identity];
+    return [[[self client] user] identity];
 }
 
 #pragma mark Push functionality
@@ -104,13 +142,23 @@
         (self.client.synchronizationStatus == TCHClientSynchronizationStatusChannelsListCompleted ||
          self.client.synchronizationStatus == TCHClientSynchronizationStatusCompleted)) {
         if (self.lastToken) {
-            [self.client registerWithToken:self.lastToken];
-            self.lastToken = nil;
+            [self.client registerWithNotificationToken:self.lastToken completion:^(TCHResult *result) {
+                if ([result isSuccessful]) {
+
+                } else {
+                    // try again?
+                }
+            }];
         }
         
         if (self.lastNotification) {
-            [self.client handleNotification:self.lastNotification];
-            self.lastNotification = nil;
+            [self.client handleNotification:self.lastNotification completion:^(TCHResult *result) {
+                if ([result isSuccessful]) {
+                    self.lastNotification = nil;
+                } else {
+                    // try again?
+                }
+            }];
         }
     }
 }

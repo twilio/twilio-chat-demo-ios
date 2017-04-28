@@ -8,20 +8,20 @@
 #import <UIKit/UIKit.h>
 
 #import <TwilioChatClient/TwilioChatClient.h>
-#import <TwilioChatClient/TCHUserInfo.h>
+#import <TwilioChatClient/TCHUser.h>
 
 @interface DemoHelpers : NSObject
 
 + (void)displayToastWithMessage:(NSString *)message
                          inView:(UIView *)view;
 
-+ (NSString *)displayNameForMember:(TCHMember *)member;
++ (NSString *)displayNameForUser:(TCHUser *)user;
 
 + (NSString *)messageDisplayForDate:(NSDate *)date;
 
-+ (UIImage *)avatarForUserInfo:(TCHUserInfo *)userInfo
-                          size:(NSUInteger)size
-                 scalingFactor:(CGFloat)scale;
++ (UIImage *)avatarForUser:(TCHUser *)user
+                      size:(NSUInteger)size
+             scalingFactor:(CGFloat)scale;
 
 + (UIImage *)avatarForAuthor:(NSString *)author
                         size:(NSUInteger)size
