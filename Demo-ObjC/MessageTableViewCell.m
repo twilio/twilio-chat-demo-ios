@@ -41,8 +41,16 @@
 - (void)configureDisplay {
     TCHMember *author = [[self channel] memberWithIdentity:[self message].author];
     if (author) {
-        self.authorLabel.text = [DemoHelpers displayNameForMember:author];
-        self.avatarImage.image = [DemoHelpers avatarForUserInfo:author.userInfo size:44.0 scalingFactor:2.0];
+        [[[[ChatManager sharedManager] client] users] subscribedUserWithIdentity:author.identity
+                                                                      completion:^(TCHResult *result, TCHUser *user) {
+                                                                          if (result.isSuccessful) {
+                                                                              self.authorLabel.text = [DemoHelpers displayNameForUser:user];
+                                                                              self.avatarImage.image = [DemoHelpers avatarForUser:user size:44.0 scalingFactor:2.0];
+                                                                          } else {
+                                                                              self.authorLabel.text = self.message.author;
+                                                                              self.avatarImage.image = [DemoHelpers avatarForAuthor:self.message.author size:44.0 scalingFactor:2.0];
+                                                                          }
+                                                                      }];
     } else {
         // original author may not exist anymore on channel, display the original username
         self.authorLabel.text = self.message.author;
@@ -67,8 +75,8 @@
 }
 
 - (NSString *)localIdentity {
-    TCHUserInfo *localUserInfo = [[[ChatManager sharedManager] client] userInfo];
-    return localUserInfo.identity;
+    TCHUser *localUser = [[[ChatManager sharedManager] client] user];
+    return localUser.identity;
 }
 
 #pragma mark - ReactionViewDelegate
