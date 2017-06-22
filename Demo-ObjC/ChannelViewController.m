@@ -475,15 +475,15 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     if (textField.text.length == 0) {
         [self.view endEditing:YES];
     } else {
-        TCHMessage *message = [self.channel.messages createMessageWithBody:textField.text];
+        NSDictionary *messageOptions = @{TCHMessageOptionBody: textField.text};
         textField.text = @"";
-        [self.channel.messages sendMessage:message
-                                completion:^(TCHResult *result) {
-                                    if (!result.isSuccessful) {
-                                        [DemoHelpers displayToastWithMessage:@"Failed to send message." inView:self.view];
-                                        NSLog(@"%s: %@", __FUNCTION__, result.error);
-                                    }
-                                }];
+        [self.channel.messages sendMessageWithOptions:messageOptions
+                                           completion:^(TCHResult *result, TCHMessage *message) {
+                                               if (!result.isSuccessful) {
+                                                   [DemoHelpers displayToastWithMessage:@"Failed to send message." inView:self.view];
+                                                   NSLog(@"%s: %@", __FUNCTION__, result.error);
+                                               }
+                                           }];
     }
     return YES;
 }
@@ -1038,6 +1038,12 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 - (void)chatClient:(TwilioChatClient *)client
            channel:(TCHChannel *)channel
            updated:(TCHChannelUpdate)updated {
+    [self rebuildData];
+}
+
+- (void)chatClient:(TwilioChatClient *)client
+           channel:(TCHChannel *)channel
+synchronizationStatusUpdated:(TCHChannelSynchronizationStatus)status {
     [self rebuildData];
 }
     
