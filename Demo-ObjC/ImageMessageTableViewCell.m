@@ -1,24 +1,23 @@
 //
-//  MessageTableViewCell.m
+//  ImageMessageTableViewCell.m
 //  Twilio Chat Demo
 //
 //  Copyright (c) 2017 Twilio, Inc. All rights reserved.
 //
 
-#import "MessageTableViewCell.h"
+#import "ImageMessageTableViewCell.h"
 #import "ReactionsView.h"
 #import "DemoHelpers.h"
 #import "ChatManager.h"
 
-@interface MessageTableViewCell() <ReactionViewDelegate>
+@interface ImageMessageTableViewCell() <ReactionViewDelegate>
 @property (nonatomic, weak) UILabel *authorLabel;
 @property (nonatomic, weak) UILabel *dateLabel;
-@property (nonatomic, weak) UILabel *bodyLabel;
 @property (nonatomic, weak) UIImageView *avatarImage;
 @property (nonatomic, weak) ReactionsView *reactionsView;
 @end
 
-@implementation MessageTableViewCell
+@implementation ImageMessageTableViewCell
 
 - (instancetype)initWithStyle:(UITableViewCellStyle)style
               reuseIdentifier:(nullable NSString *)reuseIdentifier {
@@ -60,14 +59,18 @@
     components[@"date"] = dateLabel;
     [self addSubview:dateLabel];
     self.dateLabel = dateLabel;
+
+    UIImageView *messageImageView = [[UIImageView alloc] init];
+    messageImageView.translatesAutoresizingMaskIntoConstraints = NO;
+    messageImageView.contentMode = UIViewContentModeScaleAspectFit;
+    components[@"body"] = messageImageView;
+    [self addSubview:messageImageView];
+    self.messageImageView = messageImageView;
     
-    UILabel *bodyLabel = [[UILabel alloc] init];
-    bodyLabel.translatesAutoresizingMaskIntoConstraints = NO;
-    [bodyLabel setFont:[UIFont systemFontOfSize:17.0f]];
-    bodyLabel.numberOfLines = 0;
-    components[@"body"] = bodyLabel;
-    [self addSubview:bodyLabel];
-    self.bodyLabel = bodyLabel;
+    UIProgressView *progressView = [[UIProgressView alloc] init];
+    progressView.translatesAutoresizingMaskIntoConstraints = NO;
+    progressView.progress = 0.0f;
+    self.progressView = progressView;
     
     ReactionsView *reactionsView = [[ReactionsView alloc] init];
     reactionsView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -108,7 +111,7 @@
                                                                              options:NSLayoutFormatAlignAllLeading
                                                                              metrics:metrics
                                                                                views:components]];
-    
+
     [self addConstraints:constraints];
     [self setNeedsLayout];
     
@@ -116,9 +119,90 @@
     self.reactionsView.delegate = self;
 }
 
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+- (void)showProgress {
+    NSDictionary<NSString *, id> *metrics = [NSMutableDictionary dictionary];
+    NSMutableDictionary<NSString *, UIView *> *components = [NSMutableDictionary dictionary];
+
+    components[@"author"] = self.authorLabel;
+    components[@"progress"] = self.progressView;
+    components[@"body"] = self.messageImageView;
+    components[@"reactions"] = self.reactionsView;
+
+    [self addSubview:self.progressView];
+    
+    NSMutableArray<NSLayoutConstraint *> *constraints = [NSMutableArray array];
+    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"H:[progress]-|"
+                                                                             options:0
+                                                                             metrics:metrics
+                                                                               views:components]];
+    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:[progress(>=3)]"
+                                                                             options:0
+                                                                             metrics:metrics
+                                                                               views:components]];
+    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"H:[progress]-[body]"
+                                                                             options:NSLayoutFormatAlignAllTop
+                                                                             metrics:metrics
+                                                                               views:components]];
+    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:[progress]-[body]"
+                                                                             options:NSLayoutFormatAlignAllLeading
+                                                                             metrics:metrics
+                                                                               views:components]];
+    for (NSLayoutConstraint *constraint in constraints) {
+        [constraint setPriority:UILayoutPriorityRequired];
+    }
+    [self addConstraints:constraints];
+
+    [self.progressView setNeedsLayout];
+    [self.progressView setNeedsDisplay];
+    
+    [self updateConstraints];
+    [self setNeedsLayout];
+    [self setNeedsDisplay];
+}
+
+- (void)hideProgress {
+    [self.progressView removeFromSuperview];
+    self.progressView.progress = 0.0f;
+}
+
 - (void)setMessage:(TCHMessage *)message {
     _message = message;
     
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    _message = message;
+    
+    if (message) {
+        [[NSNotificationCenter defaultCenter] addObserverForName:@"MediaProgressUpdate"
+                                                          object:message
+                                                           queue:[NSOperationQueue mainQueue]
+                                                      usingBlock:^(NSNotification * _Nonnull note) {
+                                                          CGFloat progress = [note.userInfo[@"progress"] floatValue];
+                                                          [self.progressView setProgress:progress animated:YES];
+                                                      }];
+        
+        [[NSNotificationCenter defaultCenter] addObserverForName:@"MediaProgressImage"
+                                                          object:message
+                                                           queue:[NSOperationQueue mainQueue]
+                                                      usingBlock:^(NSNotification * _Nonnull note) {
+                                                          UIImage *image = note.userInfo[@"image"];
+                                                          UITableView *tableView = note.userInfo[@"tableView"];
+                                                          
+                                                          self.messageImageView.image = image;
+                                                          [tableView reloadData];
+                                                      }];
+        
+        [[NSNotificationCenter defaultCenter] addObserverForName:@"MediaProgressHide"
+                                                          object:message
+                                                           queue:[NSOperationQueue mainQueue]
+                                                      usingBlock:^(NSNotification * _Nonnull note) {
+                                                          [self hideProgress];
+                                                      }];
+    }
+
     [self configureDisplay];
 }
 
@@ -141,7 +225,6 @@
         self.avatarImage.image = [DemoHelpers avatarForAuthor:self.message.author size:44.0 scalingFactor:2.0];
     }
     self.dateLabel.text = [DemoHelpers messageDisplayForDate:self.message.timestampAsDate];
-    self.bodyLabel.text = self.message.body;
     NSArray *reactions = self.message.attributes[@"reactions"];
     if (reactions) {
         self.reactionsView.localIdentity = [self localIdentity];
@@ -155,6 +238,11 @@
 - (void)prepareForReuse {
     self.contentView.backgroundColor = [UIColor whiteColor];
     self.reactionsView.reactions = @[];
+    self.authorLabel.text = @"";
+    self.dateLabel.text = @"";
+    [self.messageImageView setImage:nil];
+    [self hideProgress];
+    self.message = nil;
     self.delegate = nil;
 }
 

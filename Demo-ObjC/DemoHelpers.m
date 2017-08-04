@@ -11,7 +11,8 @@
 #import "DemoHelpers.h"
 
 @interface DemoHelpers()
-@property (nonatomic, strong) NSMutableDictionary *imageCache;
+@property (nonatomic, strong) NSMutableDictionary <NSString *, UIImage *> *imageCache;
+@property (nonatomic, strong) NSMapTable <NSString *, dispatch_queue_t> *downloadQueues;
 @end
 
 @implementation DemoHelpers
@@ -19,6 +20,8 @@
 - (instancetype)init {
     if ((self = [super init]) != nil) {
         self.imageCache = [NSMutableDictionary dictionary];
+        self.downloadQueues = [NSMapTable mapTableWithKeyOptions:NSPointerFunctionsStrongMemory
+                                                    valueOptions:NSPointerFunctionsWeakMemory];
     }
     return self;
 }
@@ -271,6 +274,114 @@
     }
 }
 
++ (UIImage *)cachedImageForMessage:(TCHMessage *)message {
+    NSString *finalFilename = [self mediaFilenameForMessage:message];
+    
+    if ([[NSFileManager defaultManager] fileExistsAtPath:finalFilename]) {
+        return [UIImage imageWithContentsOfFile:finalFilename];
+    }
+    
+    return nil;
+}
+
++ (void)loadImageForMessage:(TCHMessage *)message
+             progressUpdate:(void(^)(CGFloat progress))progressUpdate
+                 completion:(void(^)(UIImage *image))completion {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+        UIImage *cachedImage = [self cachedImageForMessage:message];
+        if (cachedImage) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completion(cachedImage);
+            });
+            return;
+        }
+        
+        dispatch_queue_t queue = nil;
+        @synchronized (self) {
+            queue = [[DemoHelpers sharedInstance].downloadQueues objectForKey:message.mediaSid];
+            if (!queue) {
+                NSString *queueName = [NSString stringWithFormat:@"Download %@", message.mediaSid];
+                queue = dispatch_queue_create([queueName cStringUsingEncoding:NSUTF8StringEncoding], nil);
+                [[DemoHelpers sharedInstance].downloadQueues setObject:queue forKey:message.mediaSid];
+            }
+        }
+
+        dispatch_async(queue, ^{
+            UIImage *cachedImage = [self cachedImageForMessage:message];
+            if (cachedImage) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    completion(cachedImage);
+                });
+                return;
+            }
+
+            dispatch_semaphore_t semaphore = dispatch_semaphore_create(0); // Keep asynchronous getMediaWithOutputStream: call from allowing our serial queue to process the next request for this same download
+
+            NSString *finalFilename = [self mediaFilenameForMessage:message];
+            
+            NSString *tempFilename = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"%@_%@", [[NSProcessInfo processInfo] globallyUniqueString], [finalFilename lastPathComponent]]];
+            
+            NSOutputStream *outputStream = [NSOutputStream outputStreamToFileAtPath:tempFilename append:NO];
+            [message getMediaWithOutputStream:outputStream
+                                    onStarted:^{
+                                        progressUpdate(0.0);
+                                    } onProgress:^(NSUInteger bytes) {
+                                        progressUpdate((CGFloat)bytes / (CGFloat)message.mediaSize);
+                                    } onCompleted:^(NSString * _Nonnull mediaSid) {
+                                        progressUpdate(1.0);
+                                    } completion:^(TCHResult * _Nonnull result) {
+                                        dispatch_queue_t thisQueue = queue; // keep queue alive until we're done
+                                        if (result.isSuccessful) {
+                                            if (![[NSFileManager defaultManager] fileExistsAtPath:finalFilename]) {
+                                                NSError *error = nil;
+                                                [[NSFileManager defaultManager] moveItemAtPath:tempFilename
+                                                                                        toPath:finalFilename
+                                                                                         error:&error];
+                                                
+                                                if (error) {
+                                                    NSLog(@"Error renaming final file to %@ - %@", finalFilename, error);
+                                                }
+                                            }
+                                            dispatch_async(dispatch_get_main_queue(), ^{
+                                                completion([UIImage imageWithContentsOfFile:finalFilename]);
+                                            });
+                                        } else {
+                                            NSLog(@"Download failed, cleaning up file: %@", result.error);
+                                            NSError *deleteError = nil;
+                                            [[NSFileManager defaultManager] removeItemAtPath:tempFilename
+                                                                                       error:&deleteError];
+                                            if (deleteError) {
+                                                NSLog(@"Unable to delete failed download");
+                                            }
+                                            
+                                            dispatch_async(dispatch_get_main_queue(), ^{
+                                                completion(nil);
+                                            });
+                                        }
+                                        thisQueue = nil;
+                                        dispatch_semaphore_signal(semaphore);
+                                    }];
+            
+            dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 5 * 60 * NSEC_PER_SEC));
+        });
+    });
+}
+
++ (UIImage *)image:(UIImage *)image scaledToWith:(CGFloat)width {
+    if (image.size.width <= width) {
+        return image;
+    }
+    
+    CGFloat aspectRatio = width / image.size.width;
+    CGSize newSize = CGSizeMake(image.size.width * aspectRatio, image.size.height * aspectRatio);
+    
+    UIGraphicsBeginImageContextWithOptions( newSize, NO, 0 );
+    [image drawInRect:CGRectMake(0, 0, newSize.width, newSize.height)];
+    UIImage *scaledImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return scaledImage;
+}
+
 #pragma mark - Internal helper methods
 
 + (NSDateFormatter *)cachedDateFormatterWithKey:(NSString *)cacheKey
@@ -406,6 +517,13 @@
     }
     
     return reactionDict;
+}
+
++ (NSString *)mediaFilenameForMessage:(TCHMessage *)message {
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+    NSString *cacheDirectory = [paths objectAtIndex:0];
+    NSString *mediaDirectory = cacheDirectory;
+    return [mediaDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@-%@", message.mediaSid, message.mediaFilename ? message.mediaFilename : @"attachment.dat"]];
 }
 
 @end

@@ -33,4 +33,12 @@
 
 + (void)reactionDecrement:(NSString *)emojiString message:(TCHMessage *)message user:(NSString *)identity;
 
++ (UIImage *)cachedImageForMessage:(TCHMessage *)message;
+
++ (void)loadImageForMessage:(TCHMessage *)message
+             progressUpdate:(void(^)(CGFloat progress))progressUpdate
+                 completion:(void(^)(UIImage *image))completion;
+
++ (UIImage *)image:(UIImage *)image scaledToWith:(CGFloat)width;
+
 @end

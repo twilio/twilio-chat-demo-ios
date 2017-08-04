@@ -26,6 +26,7 @@
 		58E2F6431DA8209D00A5F23C /* ChatManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 58E2F6411DA8209D00A5F23C /* ChatManager.m */; };
 		58F878431BCD75450097F014 /* LoginViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 58F878421BCD75450097F014 /* LoginViewController.m */; };
 		58FB4B201B8E5A8800DDF5B8 /* DemoHelpers.m in Sources */ = {isa = PBXBuildFile; fileRef = 58FB4B1F1B8E5A8800DDF5B8 /* DemoHelpers.m */; };
+		58FCC7971F33AEF1007A4E0D /* ImageMessageTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 58FCC7961F33AEF1007A4E0D /* ImageMessageTableViewCell.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -64,6 +65,8 @@
 		58F878421BCD75450097F014 /* LoginViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LoginViewController.m; sourceTree = "<group>"; };
 		58FB4B1E1B8E5A8800DDF5B8 /* DemoHelpers.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DemoHelpers.h; sourceTree = "<group>"; };
 		58FB4B1F1B8E5A8800DDF5B8 /* DemoHelpers.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DemoHelpers.m; sourceTree = "<group>"; };
+		58FCC7951F33AEF1007A4E0D /* ImageMessageTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ImageMessageTableViewCell.h; sourceTree = "<group>"; };
+		58FCC7961F33AEF1007A4E0D /* ImageMessageTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ImageMessageTableViewCell.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -110,6 +113,8 @@
 				58D5090F1B7B78D20093B5F1 /* ChannelViewController.m */,
 				58D509111B7B7AF00093B5F1 /* MessageTableViewCell.h */,
 				58D509121B7B7AF00093B5F1 /* MessageTableViewCell.m */,
+				58FCC7951F33AEF1007A4E0D /* ImageMessageTableViewCell.h */,
+				58FCC7961F33AEF1007A4E0D /* ImageMessageTableViewCell.m */,
 				58652D031BC5BBC800250FEA /* MemberTypingTableViewCell.h */,
 				58652D041BC5BBC800250FEA /* MemberTypingTableViewCell.m */,
 				581B5C891C7FC8A800F16460 /* SeenByTableViewCell.h */,
@@ -215,6 +220,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				58FB4B201B8E5A8800DDF5B8 /* DemoHelpers.m in Sources */,
+				58FCC7971F33AEF1007A4E0D /* ImageMessageTableViewCell.m in Sources */,
 				581B5C8B1C7FC8A800F16460 /* SeenByTableViewCell.m in Sources */,
 				58223AC31B69571C00F0DF97 /* ChannelListViewController.m in Sources */,
 				58D509101B7B78D20093B5F1 /* ChannelViewController.m in Sources */,
