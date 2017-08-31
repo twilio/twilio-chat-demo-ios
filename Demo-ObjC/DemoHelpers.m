@@ -152,7 +152,7 @@
 + (NSString *)displayNameForUser:(TCHUser *)user {
     NSString *displayName = nil;
     NSString *friendlyName = [user friendlyName];
-    if (![friendlyName isEqualToString:@""]) {
+    if (friendlyName && ![friendlyName isEqualToString:@""]) {
         displayName = friendlyName;
     } else {
         displayName = [user identity];
@@ -161,6 +161,10 @@
 }
 
 + (NSString *)messageDisplayForDate:(NSDate *)date {
+    if (!date) {
+        return @"";
+    }
+    
     NSDateFormatter *formatter = nil;
     if ([[NSCalendar currentCalendar] isDateInToday:date]) {
         formatter = [self cachedDateFormatterWithKey:@"DemoDateFormatter-Today"
@@ -226,6 +230,10 @@
 }
 
 + (NSMutableDictionary *)deepMutableCopyOfDictionary:(NSDictionary *)dictionary {
+    if (!dictionary) {
+        return [[NSMutableDictionary alloc] init];
+    }
+    
     return (NSMutableDictionary *)CFBridgingRelease(CFPropertyListCreateDeepCopy(kCFAllocatorDefault,
                                                                                  (CFDictionaryRef)dictionary,
                                                                                  kCFPropertyListMutableContainers));
@@ -271,6 +279,20 @@
                             NSLog(@"error occurred decrementing reaction: %@", emojiString);
                         }
                     }];
+    }
+}
+
++ (void)unconsumedMessagesForChannel:(nonnull TCHChannel *)channel
+                          completion:(nonnull TCHCountCompletion)completion {
+    if (channel.synchronizationStatus < TCHChannelSynchronizationStatusAll || !channel.messages) {
+        completion([[TCHResult alloc] init], 0);
+        return;
+    }
+    
+    if (channel.messages.lastConsumedMessageIndex) { // if the user has consumed any messages, the count is good as-is
+        [channel getUnconsumedMessagesCountWithCompletion:completion];
+    } else { // otherwise display total message count for the channel
+        [channel getMessagesCountWithCompletion:completion];
     }
 }
 
