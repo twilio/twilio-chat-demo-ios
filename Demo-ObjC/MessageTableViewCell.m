@@ -123,6 +123,11 @@
 }
 
 - (void)configureDisplay {
+    if (!self.message) {
+        [self clearCell];
+        return;
+    }
+    
     TCHMember *author = [[self channel] memberWithIdentity:[self message].author];
     if (author) {
         [[[[ChatManager sharedManager] client] users] subscribedUserWithIdentity:author.identity
@@ -153,9 +158,19 @@
 }
 
 - (void)prepareForReuse {
+    [self clearCell];
+    self.delegate = nil;
+    [super prepareForReuse];
+}
+
+- (void)clearCell {
     self.contentView.backgroundColor = [UIColor whiteColor];
     self.reactionsView.reactions = @[];
-    self.delegate = nil;
+    self.reactionsView.localIdentity = @"";
+    self.authorLabel.text = @"";
+    self.avatarImage.image = nil;
+    self.dateLabel.text = @"";
+    self.bodyLabel.text = @"";
 }
 
 - (NSString *)localIdentity {

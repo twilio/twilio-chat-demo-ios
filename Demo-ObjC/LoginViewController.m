@@ -31,12 +31,13 @@
 }
 
 - (IBAction)loginTapped:(id)sender {
-    if (self.nameTextField.text && [self.nameTextField.text length] > 0) {
+    NSString *identity = self.nameTextField.text;
+    if (identity && [identity length] > 0) {
         [self.nameTextField resignFirstResponder];
         UIView *toastView = [DemoHelpers displayMessage:@"Connecting..."
                                                  inView:self.view];
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-            [[ChatManager sharedManager] loginWithIdentity:self.nameTextField.text completion:^(BOOL success) {
+            [[ChatManager sharedManager] loginWithIdentity:identity completion:^(BOOL success) {
                 dispatch_async(dispatch_get_main_queue(), ^{
                     if (success) {
                         [[ChatManager sharedManager] presentRootViewController];

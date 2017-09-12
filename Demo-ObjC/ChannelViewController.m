@@ -132,8 +132,6 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     if (self.channel) {
-        self.channel.delegate = self;
-        
         [[NSNotificationCenter defaultCenter] addObserver:self
                                                  selector:@selector(keyboardWillShow:)
                                                      name:UIKeyboardWillShowNotification
