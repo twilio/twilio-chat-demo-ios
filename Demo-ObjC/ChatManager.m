@@ -30,6 +30,12 @@
 }
 
 - (void)presentRootViewController {
+    if (self.client) {
+        [self presentChannelsScreen];
+    } else {
+        [self presentLoginScreen];
+    }
+    
     if (![[ChatManager sharedManager] hasIdentity]) {
         [self presentLoginScreen];
         return;
@@ -39,14 +45,6 @@
         [self presentChannelsScreen];
         return;
     }
-
-    [[ChatManager sharedManager] loginWithStoredIdentityWithCompletion:^(BOOL success) {
-        if (success) {
-            [self presentChannelsScreen];
-        } else {
-            [self presentLoginScreen];
-        }
-    }];
 }
 
 - (void)presentLoginScreen {
@@ -56,19 +54,11 @@
 
 - (void)presentChannelsScreen {
     AppDelegate *appDelegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
-    appDelegate.window.rootViewController = [[UIStoryboard storyboardWithName:@"Main" bundle:[NSBundle mainBundle]] instantiateInitialViewController];
+    appDelegate.window.rootViewController = [[UIStoryboard storyboardWithName:@"Main" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"navigation"];
 }
 
 - (BOOL)hasIdentity {
     return ([self storedIdentity] && [self storedIdentity].length > 0);
-}
-
-- (BOOL)loginWithStoredIdentityWithCompletion:(void(^)(BOOL success))completion {
-    if ([self hasIdentity]) {
-        return [self loginWithIdentity:[self storedIdentity] completion:completion];
-    } else {
-        return NO;
-    }
 }
 
 - (BOOL)loginWithIdentity:(NSString *)identity completion:(void(^)(BOOL success))completion {
@@ -76,13 +66,14 @@
         [self logout];
     }
     
-    [self storeIdentity:identity];
-    
     [self tokenForIdentity:identity
                 completion:^(BOOL success, NSString *token) {
                     if (success) {
+                        [self storeIdentity:identity];
+                        
                         TwilioChatClientProperties *properties = [[TwilioChatClientProperties alloc] init];
                         __weak typeof(self) weakSelf = self;
+                        [TwilioChatClient setLogLevel:TCHLogLevelDebug];
                         [TwilioChatClient chatClientWithToken:token
                                                    properties:properties
                                                      delegate:self
@@ -113,6 +104,8 @@
                                                            });
                                                        }
                                                    }];
+                    } else {
+                        completion(NO);
                     }
                 }];
 
@@ -121,8 +114,20 @@
 
 - (void)logout {
     [self storeIdentity:nil];
-    [self.client shutdown];
-    self.client = nil;
+    if (self.client) {
+        [self.client deregisterWithNotificationToken:self.lastToken
+                                          completion:^(TCHResult * _Nonnull result) {
+                                              [self.client shutdown];
+                                              self.client = nil;
+                                              dispatch_async(dispatch_get_main_queue(), ^{
+                                                  [self presentRootViewController];
+                                              });
+                                          }];
+    } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self presentRootViewController];
+        });
+    }
 }
 
 - (void)updatePushToken:(NSData *)token {

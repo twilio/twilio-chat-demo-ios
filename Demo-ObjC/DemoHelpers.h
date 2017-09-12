@@ -21,6 +21,14 @@
 + (void)displayToastWithMessage:(nonnull NSString *)message
                          inView:(nonnull UIView *)view;
 
+/** Simple message popup machanism for displaying a message to the user you are responsible for dismissing.
+ 
+ @param message The text message to display.
+ @param view The parent view of the message popup.
+ */
++ (nonnull UIView *)displayMessage:(nonnull NSString *)message
+                            inView:(nonnull UIView *)view;
+
 /** Determine a display name given a TCHUser object.
  
  This will prefer the friendlyName, if set, otherwise fallback to the user's identity.
