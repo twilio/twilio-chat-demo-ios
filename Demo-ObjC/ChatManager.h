@@ -17,7 +17,7 @@
 
 - (void)presentRootViewController;
 - (BOOL)hasIdentity;
-- (BOOL)loginWithStoredIdentityWithCompletion:(void(^)(BOOL success))completion;
+- (NSString *)storedIdentity;
 - (BOOL)loginWithIdentity:(NSString *)identity completion:(void(^)(BOOL success))completion;
 - (void)logout;
 

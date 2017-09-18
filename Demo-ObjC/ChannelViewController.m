@@ -7,6 +7,7 @@
 
 #import "ChannelViewController.h"
 #import "MessageTableViewCell.h"
+#import "ImageMessageTableViewCell.h"
 #import "MemberTypingTableViewCell.h"
 #import "SeenByTableViewCell.h"
 #import "DemoHelpers.h"
@@ -21,13 +22,17 @@ static NSString * const kChannelDataTypeUserConsumption = @"userConsumption";
 static NSString * const kChannelDataTypeMembersTyping = @"membersTyping";
 static NSString * const kChannelDataData = @"channelDataData";
 
+static NSString * const kMessageImageMimeType = @"image/jpeg";
+
 static const NSUInteger kInitialMessageCountToLoad = 20;
 static const NSUInteger kMoreMessageCountToLoad = 50;
 
-@interface ChannelViewController () <UITableViewDataSource, UITableViewDelegate, TCHChannelDelegate, UITextFieldDelegate, UIPopoverPresentationControllerDelegate, MessageTableViewCellDelegate>
+@interface ChannelViewController () <UITableViewDataSource, UITableViewDelegate, TCHChannelDelegate, UITextFieldDelegate, UIPopoverPresentationControllerDelegate, MessageTableViewCellDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate>
 @property (nonatomic, weak) IBOutlet UITableView *tableView;
 @property (weak, nonatomic) IBOutlet UITextField *messageInput;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *keyboardAdjustmentConstraint;
+
+@property (nonatomic, strong) UIImagePickerController *imagePickerController;
 
 @property (nonatomic, strong) NSMutableOrderedSet<TCHMessage *> *messages;
 @property (nonatomic, assign) BOOL mightHaveMoreMessages;
@@ -64,6 +69,14 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
     self.cachedHeights = [NSMutableDictionary dictionary];
     self.mightHaveMoreMessages = YES;
     self.loadingMoreMessages = NO;
+}
+
+- (void)dealloc {
+    if (self.channel) {
+        self.channel.delegate = nil;
+        
+        [[NSNotificationCenter defaultCenter] removeObserver:self];
+    }
 }
 
 - (void)populateConsumptionHorizonData {
@@ -104,6 +117,8 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
 - (void)viewDidLoad {
     [super viewDidLoad];
     
+    [self.tableView registerClass:[MessageTableViewCell class] forCellReuseIdentifier:@"message"];
+    [self.tableView registerClass:[ImageMessageTableViewCell class] forCellReuseIdentifier:@"image_message"];
     self.tableView.rowHeight = UITableViewAutomaticDimension;
     self.tableView.estimatedRowHeight = 88.0f;
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
@@ -117,8 +132,6 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     if (self.channel) {
-        self.channel.delegate = self;
-        
         [[NSNotificationCenter defaultCenter] addObserver:self
                                                  selector:@selector(keyboardWillShow:)
                                                      name:UIKeyboardWillShowNotification
@@ -150,11 +163,6 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
 
 - (void)viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
-    if (self.channel) {
-        self.channel.delegate = nil;
-        
-        [[NSNotificationCenter defaultCenter] removeObserver:self];
-    }
 }
 
 - (void)setChannel:(TCHChannel *)channel {
@@ -209,6 +217,12 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
     [self configurePopoverPresentationController:actionsSheet.popoverPresentationController];
 
     __weak __typeof(self) weakSelf = self;
+    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Upload Photo"
+                                                     style:UIAlertActionStyleDefault
+                                                   handler:^(UIAlertAction *action) {
+                                                       [weakSelf uploadPhoto];
+                                                   }]];
+    
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Channel Friendly Name"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
@@ -414,17 +428,54 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
 
         cell = consumptionCell;
     } else if ([data[kChannelDataType] isEqualToString:kChannelDataTypeMessage]) {
-        MessageTableViewCell *messageCell = [tableView dequeueReusableCellWithIdentifier:@"message"];
         TCHMessage *message = data[kChannelDataData];
+        
+        if (message.hasMedia &&
+            [message.mediaType isEqualToString:kMessageImageMimeType]) {
+            ImageMessageTableViewCell *imageMessageCell = [tableView dequeueReusableCellWithIdentifier:@"image_message"];
+            imageMessageCell.channel = self.channel;
+            imageMessageCell.message = message;
+            imageMessageCell.delegate = self;
 
-        messageCell.channel = self.channel;
-        messageCell.message = message;
-        messageCell.delegate = self;
+            UIImage *cachedImage = [DemoHelpers cachedImageForMessage:message];
+            
+            if (cachedImage) {
+                cachedImage = [DemoHelpers image:cachedImage
+                                    scaledToWith:imageMessageCell.messageImageView.frame.size.width];
+                [imageMessageCell.messageImageView setImage:cachedImage];
+            } else {
+                [imageMessageCell showProgress];
+                [DemoHelpers loadImageForMessage:message
+                                  progressUpdate:^(CGFloat progress)
+                 {
+                     [[NSNotificationCenter defaultCenter] postNotificationName:@"MediaProgressUpdate"
+                                                                         object:message
+                                                                       userInfo:@{@"progress": @(progress)}];
+                 }
+                                      completion:^(UIImage *image)
+                 {
+                     [[NSNotificationCenter defaultCenter] postNotificationName:@"MediaProgressHide"
+                                                                         object:message
+                                                                       userInfo:nil];
+                     if (image) {
+                         [[NSNotificationCenter defaultCenter] postNotificationName:@"MediaProgressImage"
+                                                                             object:message
+                                                                           userInfo:@{@"image": image, @"tableView": self.tableView}];
+                     }
+                 }];
+            }
+            
+            cell = imageMessageCell;
+        } else {
+            MessageTableViewCell *textMessageCell = [tableView dequeueReusableCellWithIdentifier:@"message"];
+            textMessageCell.channel = self.channel;
+            textMessageCell.message = message;
+            textMessageCell.delegate = self;
+            cell = textMessageCell;
+        }
         
         [self.channel.messages advanceLastConsumedMessageIndex:message.index];
-        [messageCell layoutIfNeeded];
-        
-        cell = messageCell;
+        [cell layoutIfNeeded];
     } else {
         cell = [[UITableViewCell alloc] initWithFrame:CGRectZero];
     }
@@ -475,20 +526,59 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     if (textField.text.length == 0) {
         [self.view endEditing:YES];
     } else {
-        TCHMessage *message = [self.channel.messages createMessageWithBody:textField.text];
+        TCHMessageOptions *messageOptions = [[TCHMessageOptions alloc] init];
+        [messageOptions withBody:textField.text];
         textField.text = @"";
-        [self.channel.messages sendMessage:message
-                                completion:^(TCHResult *result) {
-                                    if (!result.isSuccessful) {
-                                        [DemoHelpers displayToastWithMessage:@"Failed to send message." inView:self.view];
-                                        NSLog(@"%s: %@", __FUNCTION__, result.error);
-                                    }
-                                }];
+
+        [self.channel.messages sendMessageWithOptions:messageOptions
+                                           completion:^(TCHResult *result, TCHMessage *message) {
+                                               if (!result.isSuccessful) {
+                                                   [DemoHelpers displayToastWithMessage:@"Failed to send message." inView:self.view];
+                                                   NSLog(@"%s: %@", __FUNCTION__, result.error);
+                                               }
+                                           }];
     }
     return YES;
 }
 
 #pragma mark - Internal methods
+
+- (void)uploadPhoto {
+    UIImagePickerController *imagePickerController = [[UIImagePickerController alloc] init];
+    imagePickerController.modalPresentationStyle = UIModalPresentationCurrentContext;
+    imagePickerController.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
+    imagePickerController.delegate = self;
+    imagePickerController.modalPresentationStyle = UIModalPresentationPopover;
+    
+    UIPopoverPresentationController *presentationController = imagePickerController.popoverPresentationController;
+    presentationController.barButtonItem = self.navigationItem.rightBarButtonItem;
+    presentationController.permittedArrowDirections = UIPopoverArrowDirectionAny;
+    
+    _imagePickerController = imagePickerController;
+    
+    [self presentViewController:self.imagePickerController animated:YES completion:nil];
+}
+
+- (void)uploadPhoto:(UIImage *)photo
+           filename:(NSString *)filename {
+    TCHMessageOptions *messageOptions = [[TCHMessageOptions alloc] init];
+    
+    NSData *data = UIImageJPEGRepresentation(photo, 1.0);
+    NSInputStream *inputStream = [NSInputStream inputStreamWithData:data];
+    [messageOptions withMediaStream:inputStream
+                        contentType:kMessageImageMimeType
+                    defaultFilename:filename
+                          onStarted:^{
+                          } onProgress:^(NSUInteger bytes) {
+                          } onCompleted:^(NSString * _Nonnull mediaSid) {
+                          }];
+    [self.channel.messages sendMessageWithOptions:messageOptions
+                                       completion:^(TCHResult *result, TCHMessage *message) {
+                                           if (!result.isSuccessful) {
+                                               [DemoHelpers displayToastWithMessage:@"Failed to send message." inView:self.view];
+                                           }
+                                       }];
+}
 
 - (void)changeFriendlyName {
     NSString *title = @"Friendly Name";
@@ -1040,6 +1130,12 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
            updated:(TCHChannelUpdate)updated {
     [self rebuildData];
 }
+
+- (void)chatClient:(TwilioChatClient *)client
+           channel:(TCHChannel *)channel
+synchronizationStatusUpdated:(TCHChannelSynchronizationStatus)status {
+    [self rebuildData];
+}
     
 - (void)chatClient:(TwilioChatClient *)client
     channelDeleted:(TCHChannel *)channel {
@@ -1200,6 +1296,21 @@ typingEndedOnChannel:(TCHChannel *)channel
 - (NSString *)localIdentity {
     TCHUser *localUser = [[[ChatManager sharedManager] client] user];
     return localUser.identity;
+}
+
+#pragma mark - UIImagePickerControllerDelegate
+
+- (void)imagePickerController:(UIImagePickerController *)picker
+didFinishPickingMediaWithInfo:(NSDictionary *)info {
+    UIImage *image = [info valueForKey:UIImagePickerControllerOriginalImage];
+    [self uploadPhoto:image filename:@"file.jpg"];
+    
+    [self dismissViewControllerAnimated:YES completion:nil];
+}
+
+- (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker
+{
+    [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 @end

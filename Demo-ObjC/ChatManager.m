@@ -30,6 +30,12 @@
 }
 
 - (void)presentRootViewController {
+    if (self.client) {
+        [self presentChannelsScreen];
+    } else {
+        [self presentLoginScreen];
+    }
+    
     if (![[ChatManager sharedManager] hasIdentity]) {
         [self presentLoginScreen];
         return;
@@ -39,14 +45,6 @@
         [self presentChannelsScreen];
         return;
     }
-
-    [[ChatManager sharedManager] loginWithStoredIdentityWithCompletion:^(BOOL success) {
-        if (success) {
-            [self presentChannelsScreen];
-        } else {
-            [self presentLoginScreen];
-        }
-    }];
 }
 
 - (void)presentLoginScreen {
@@ -56,19 +54,11 @@
 
 - (void)presentChannelsScreen {
     AppDelegate *appDelegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
-    appDelegate.window.rootViewController = [[UIStoryboard storyboardWithName:@"Main" bundle:[NSBundle mainBundle]] instantiateInitialViewController];
+    appDelegate.window.rootViewController = [[UIStoryboard storyboardWithName:@"Main" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"navigation"];
 }
 
 - (BOOL)hasIdentity {
     return ([self storedIdentity] && [self storedIdentity].length > 0);
-}
-
-- (BOOL)loginWithStoredIdentityWithCompletion:(void(^)(BOOL success))completion {
-    if ([self hasIdentity]) {
-        return [self loginWithIdentity:[self storedIdentity] completion:completion];
-    } else {
-        return NO;
-    }
 }
 
 - (BOOL)loginWithIdentity:(NSString *)identity completion:(void(^)(BOOL success))completion {
@@ -76,49 +66,68 @@
         [self logout];
     }
     
-    [self storeIdentity:identity];
-    
-    NSString *token = [self tokenForIdentity:identity];
-    TwilioChatClientProperties *properties = [[TwilioChatClientProperties alloc] init];
-    __weak typeof(self) weakSelf = self;
-    [TwilioChatClient chatClientWithToken:token
-                               properties:properties
-                                 delegate:self
-                               completion:^(TCHResult *result, TwilioChatClient *chatClient) {
-                                   if ([result isSuccessful]) {
-                                       self.client = chatClient;
-
-                                       self.accessManager = [TwilioAccessManager accessManagerWithToken:token
-                                                                                               delegate:weakSelf];
-                                       
-                                       __weak typeof(weakSelf.client) weakClient = weakSelf.client;
-                                       [self.accessManager registerClient:self.client forUpdates:^(NSString * _Nonnull updatedToken) {
-                                           [weakClient updateToken:updatedToken completion:^(TCHResult *result) {
-                                               if (![result isSuccessful]) {
-                                                   // retry token update or warn user
-                                               }
-                                           }];
-                                       }];
-
-                                       dispatch_async(dispatch_get_main_queue(), ^{
-                                           [[ChatManager sharedManager] updateChatClient];
-                                           completion(YES);
-                                       });
-                                   } else {
-                                       // warn user
-                                       dispatch_async(dispatch_get_main_queue(), ^{
-                                           completion(NO);
-                                       });
-                                   }
-                               }];
+    [self tokenForIdentity:identity
+                completion:^(BOOL success, NSString *token) {
+                    if (success) {
+                        [self storeIdentity:identity];
+                        
+                        TwilioChatClientProperties *properties = [[TwilioChatClientProperties alloc] init];
+                        __weak typeof(self) weakSelf = self;
+                        [TwilioChatClient setLogLevel:TCHLogLevelDebug];
+                        [TwilioChatClient chatClientWithToken:token
+                                                   properties:properties
+                                                     delegate:self
+                                                   completion:^(TCHResult *result, TwilioChatClient *chatClient) {
+                                                       if ([result isSuccessful]) {
+                                                           self.client = chatClient;
+                                                           
+                                                           self.accessManager = [TwilioAccessManager accessManagerWithToken:token
+                                                                                                                   delegate:weakSelf];
+                                                           
+                                                           __weak typeof(weakSelf.client) weakClient = weakSelf.client;
+                                                           [self.accessManager registerClient:self.client forUpdates:^(NSString * _Nonnull updatedToken) {
+                                                               [weakClient updateToken:updatedToken completion:^(TCHResult *result) {
+                                                                   if (![result isSuccessful]) {
+                                                                       // retry token update or warn user
+                                                                   }
+                                                               }];
+                                                           }];
+                                                           
+                                                           dispatch_async(dispatch_get_main_queue(), ^{
+                                                               [[ChatManager sharedManager] updateChatClient];
+                                                               completion(YES);
+                                                           });
+                                                       } else {
+                                                           // warn user
+                                                           dispatch_async(dispatch_get_main_queue(), ^{
+                                                               completion(NO);
+                                                           });
+                                                       }
+                                                   }];
+                    } else {
+                        completion(NO);
+                    }
+                }];
 
     return YES;
 }
 
 - (void)logout {
     [self storeIdentity:nil];
-    [self.client shutdown];
-    self.client = nil;
+    if (self.client) {
+        [self.client deregisterWithNotificationToken:self.lastToken
+                                          completion:^(TCHResult * _Nonnull result) {
+                                              [self.client shutdown];
+                                              self.client = nil;
+                                              dispatch_async(dispatch_get_main_queue(), ^{
+                                                  [self presentRootViewController];
+                                              });
+                                          }];
+    } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self presentRootViewController];
+        });
+    }
 }
 
 - (void)updatePushToken:(NSData *)token {
@@ -165,9 +174,10 @@
 
 #pragma mark Internal helpers
 
-- (NSString *)tokenForIdentity:(NSString *)identity {
-#error - Use the capability string generated in the Twilio SDK portal to populate the token variable and delete this line to build the Demo.
-    return nil;
+- (void)tokenForIdentity:(NSString *)identity
+              completion:(void(^)(BOOL success, NSString *token))completion {
+#error - Use the access token generated in the Twilio SDK portal to populate the token variable and delete this line to build the Demo.  Alternately, implement an asynchronous fetch against your own token service here.
+    completion(TRUE, @"TOKEN_GOES_HERE");
 }
 
 - (void)storeIdentity:(NSString *)identity {
@@ -183,7 +193,11 @@
     
 - (void)accessManagerTokenWillExpire:(nonnull TwilioAccessManager *)accessManager {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-        [accessManager updateToken:[self tokenForIdentity:[self identity]]];
+        [self tokenForIdentity:[self identity] completion:^(BOOL success, NSString *token) {
+            if (success) {
+                [accessManager updateToken:token];
+            }
+        }];
     });
 }
     

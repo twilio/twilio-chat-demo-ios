@@ -11,7 +11,8 @@
 #import "DemoHelpers.h"
 
 @interface DemoHelpers()
-@property (nonatomic, strong) NSMutableDictionary *imageCache;
+@property (nonatomic, strong) NSMutableDictionary <NSString *, UIImage *> *imageCache;
+@property (nonatomic, strong) NSMapTable <NSString *, dispatch_queue_t> *downloadQueues;
 @end
 
 @implementation DemoHelpers
@@ -19,6 +20,8 @@
 - (instancetype)init {
     if ((self = [super init]) != nil) {
         self.imageCache = [NSMutableDictionary dictionary];
+        self.downloadQueues = [NSMapTable mapTableWithKeyOptions:NSPointerFunctionsStrongMemory
+                                                    valueOptions:NSPointerFunctionsWeakMemory];
     }
     return self;
 }
@@ -34,100 +37,8 @@
 
 + (void)displayToastWithMessage:(NSString *)message
                          inView:(UIView *)view {
-    __block UIView *toastView = [[UIView alloc] initWithFrame:CGRectMake(0.0, 0.0, 250.0, 100.0)];
-    toastView.backgroundColor = [UIColor blueColor];
-    toastView.layer.cornerRadius = 5.0f;
-    UILabel *toastViewLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-    [toastView addSubview:toastViewLabel];
-    [view addSubview:toastView];
-    
-    [toastView setTranslatesAutoresizingMaskIntoConstraints:NO];
-    [toastViewLabel setTranslatesAutoresizingMaskIntoConstraints:NO];
-    
-    NSMutableArray *constraints = [NSMutableArray array];
-    [constraints addObject:[NSLayoutConstraint constraintWithItem:toastView
-                                                        attribute:NSLayoutAttributeCenterX
-                                                        relatedBy:NSLayoutRelationEqual
-                                                           toItem:toastViewLabel
-                                                        attribute:NSLayoutAttributeCenterX
-                                                       multiplier:1.0
-                                                         constant:0.0]];
-    [constraints addObject:[NSLayoutConstraint constraintWithItem:toastView
-                                                        attribute:NSLayoutAttributeCenterY
-                                                        relatedBy:NSLayoutRelationEqual
-                                                           toItem:toastViewLabel
-                                                        attribute:NSLayoutAttributeCenterY
-                                                       multiplier:1.0
-                                                         constant:0.0]];
-    [constraints addObject:[NSLayoutConstraint constraintWithItem:toastViewLabel
-                                                        attribute:NSLayoutAttributeLeading
-                                                        relatedBy:NSLayoutRelationEqual
-                                                           toItem:toastView
-                                                        attribute:NSLayoutAttributeLeading
-                                                       multiplier:1.0
-                                                         constant:8.0]];
-    [constraints addObject:[NSLayoutConstraint constraintWithItem:toastViewLabel
-                                                        attribute:NSLayoutAttributeTrailing
-                                                        relatedBy:NSLayoutRelationEqual
-                                                           toItem:toastView
-                                                        attribute:NSLayoutAttributeTrailing
-                                                       multiplier:1.0
-                                                         constant:-8.0]];
-    [constraints addObject:[NSLayoutConstraint constraintWithItem:toastViewLabel
-                                                        attribute:NSLayoutAttributeTop
-                                                        relatedBy:NSLayoutRelationGreaterThanOrEqual
-                                                           toItem:toastView
-                                                        attribute:NSLayoutAttributeTop
-                                                       multiplier:1.0
-                                                         constant:8.0]];
-    [constraints addObject:[NSLayoutConstraint constraintWithItem:toastViewLabel
-                                                        attribute:NSLayoutAttributeBottom
-                                                        relatedBy:NSLayoutRelationLessThanOrEqual
-                                                           toItem:toastView
-                                                        attribute:NSLayoutAttributeBottom
-                                                       multiplier:1.0
-                                                         constant:-8.0]];
-    [toastView addConstraints:constraints];
-    
-    toastViewLabel.numberOfLines = 0;
-    toastViewLabel.textAlignment = NSTextAlignmentCenter;
-    toastViewLabel.textColor = [UIColor whiteColor];
-    toastViewLabel.text = message;
-    toastView.alpha = 0.0f;
-    toastView.hidden = NO;
-    
-    constraints = [NSMutableArray array];
-    [constraints addObject:[NSLayoutConstraint constraintWithItem:view
-                                                        attribute:NSLayoutAttributeCenterX
-                                                        relatedBy:NSLayoutRelationEqual
-                                                           toItem:toastView
-                                                        attribute:NSLayoutAttributeCenterX
-                                                       multiplier:1.0
-                                                         constant:0.0]];
-    [constraints addObject:[NSLayoutConstraint constraintWithItem:view
-                                                        attribute:NSLayoutAttributeCenterY
-                                                        relatedBy:NSLayoutRelationEqual
-                                                           toItem:toastView
-                                                        attribute:NSLayoutAttributeCenterY
-                                                       multiplier:1.0
-                                                         constant:0.0]];
-    [constraints addObject:[NSLayoutConstraint constraintWithItem:toastView
-                                                        attribute:NSLayoutAttributeHeight
-                                                        relatedBy:NSLayoutRelationGreaterThanOrEqual
-                                                           toItem:nil
-                                                        attribute:0
-                                                       multiplier:0.0
-                                                         constant:100.0]];
-    [constraints addObject:[NSLayoutConstraint constraintWithItem:toastView
-                                                        attribute:NSLayoutAttributeWidth
-                                                        relatedBy:NSLayoutRelationEqual
-                                                           toItem:nil
-                                                        attribute:0
-                                                       multiplier:0.0
-                                                         constant:250.0]];
-    [view addConstraints:constraints];
-    
-    [toastView setNeedsLayout];
+    __block UIView *toastView = [self createMessagePopup:message
+                                                  inView:view];
     
     [UIView animateWithDuration:1.25f delay:0.0f
                         options:UIViewAnimationOptionBeginFromCurrentState
@@ -146,10 +57,24 @@
                      }];
 }
 
++ (UIView *)displayMessage:(NSString *)message
+                    inView:(UIView *)view {
+    UIView *toastView = [self createMessagePopup:message
+                                                  inView:view];
+    
+    [UIView animateWithDuration:1.25f delay:0.0f
+                        options:UIViewAnimationOptionBeginFromCurrentState
+                     animations:^{
+                         toastView.alpha = 1.0f;
+                     } completion:nil];
+    
+    return toastView;
+}
+
 + (NSString *)displayNameForUser:(TCHUser *)user {
     NSString *displayName = nil;
     NSString *friendlyName = [user friendlyName];
-    if (![friendlyName isEqualToString:@""]) {
+    if (friendlyName && ![friendlyName isEqualToString:@""]) {
         displayName = friendlyName;
     } else {
         displayName = [user identity];
@@ -158,6 +83,10 @@
 }
 
 + (NSString *)messageDisplayForDate:(NSDate *)date {
+    if (!date) {
+        return @"";
+    }
+    
     NSDateFormatter *formatter = nil;
     if ([[NSCalendar currentCalendar] isDateInToday:date]) {
         formatter = [self cachedDateFormatterWithKey:@"DemoDateFormatter-Today"
@@ -223,6 +152,10 @@
 }
 
 + (NSMutableDictionary *)deepMutableCopyOfDictionary:(NSDictionary *)dictionary {
+    if (!dictionary) {
+        return [[NSMutableDictionary alloc] init];
+    }
+    
     return (NSMutableDictionary *)CFBridgingRelease(CFPropertyListCreateDeepCopy(kCFAllocatorDefault,
                                                                                  (CFDictionaryRef)dictionary,
                                                                                  kCFPropertyListMutableContainers));
@@ -269,6 +202,128 @@
                         }
                     }];
     }
+}
+
++ (void)unconsumedMessagesForChannel:(nonnull TCHChannel *)channel
+                          completion:(nonnull TCHCountCompletion)completion {
+    if (channel.synchronizationStatus < TCHChannelSynchronizationStatusAll || !channel.messages) {
+        completion([[TCHResult alloc] init], 0);
+        return;
+    }
+    
+    if (channel.messages.lastConsumedMessageIndex) { // if the user has consumed any messages, the count is good as-is
+        [channel getUnconsumedMessagesCountWithCompletion:completion];
+    } else { // otherwise display total message count for the channel
+        [channel getMessagesCountWithCompletion:completion];
+    }
+}
+
++ (UIImage *)cachedImageForMessage:(TCHMessage *)message {
+    NSString *finalFilename = [self mediaFilenameForMessage:message];
+    
+    if ([[NSFileManager defaultManager] fileExistsAtPath:finalFilename]) {
+        return [UIImage imageWithContentsOfFile:finalFilename];
+    }
+    
+    return nil;
+}
+
++ (void)loadImageForMessage:(TCHMessage *)message
+             progressUpdate:(void(^)(CGFloat progress))progressUpdate
+                 completion:(void(^)(UIImage *image))completion {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+        UIImage *cachedImage = [self cachedImageForMessage:message];
+        if (cachedImage) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completion(cachedImage);
+            });
+            return;
+        }
+        
+        dispatch_queue_t queue = nil;
+        @synchronized (self) {
+            queue = [[DemoHelpers sharedInstance].downloadQueues objectForKey:message.mediaSid];
+            if (!queue) {
+                NSString *queueName = [NSString stringWithFormat:@"Download %@", message.mediaSid];
+                queue = dispatch_queue_create([queueName cStringUsingEncoding:NSUTF8StringEncoding], nil);
+                [[DemoHelpers sharedInstance].downloadQueues setObject:queue forKey:message.mediaSid];
+            }
+        }
+
+        dispatch_async(queue, ^{
+            UIImage *cachedImage = [self cachedImageForMessage:message];
+            if (cachedImage) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    completion(cachedImage);
+                });
+                return;
+            }
+
+            dispatch_semaphore_t semaphore = dispatch_semaphore_create(0); // Keep asynchronous getMediaWithOutputStream: call from allowing our serial queue to process the next request for this same download
+
+            NSString *finalFilename = [self mediaFilenameForMessage:message];
+            
+            NSString *tempFilename = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"%@_%@", [[NSProcessInfo processInfo] globallyUniqueString], [finalFilename lastPathComponent]]];
+            
+            NSOutputStream *outputStream = [NSOutputStream outputStreamToFileAtPath:tempFilename append:NO];
+            [message getMediaWithOutputStream:outputStream
+                                    onStarted:^{
+                                        progressUpdate(0.0);
+                                    } onProgress:^(NSUInteger bytes) {
+                                        progressUpdate((CGFloat)bytes / (CGFloat)message.mediaSize);
+                                    } onCompleted:^(NSString * _Nonnull mediaSid) {
+                                        progressUpdate(1.0);
+                                    } completion:^(TCHResult * _Nonnull result) {
+                                        dispatch_queue_t thisQueue = queue; // keep queue alive until we're done
+                                        if (result.isSuccessful) {
+                                            if (![[NSFileManager defaultManager] fileExistsAtPath:finalFilename]) {
+                                                NSError *error = nil;
+                                                [[NSFileManager defaultManager] moveItemAtPath:tempFilename
+                                                                                        toPath:finalFilename
+                                                                                         error:&error];
+                                                
+                                                if (error) {
+                                                    NSLog(@"Error renaming final file to %@ - %@", finalFilename, error);
+                                                }
+                                            }
+                                            dispatch_async(dispatch_get_main_queue(), ^{
+                                                completion([UIImage imageWithContentsOfFile:finalFilename]);
+                                            });
+                                        } else {
+                                            NSLog(@"Download failed, cleaning up file: %@", result.error);
+                                            NSError *deleteError = nil;
+                                            [[NSFileManager defaultManager] removeItemAtPath:tempFilename
+                                                                                       error:&deleteError];
+                                            if (deleteError) {
+                                                NSLog(@"Unable to delete failed download");
+                                            }
+                                            
+                                            dispatch_async(dispatch_get_main_queue(), ^{
+                                                completion(nil);
+                                            });
+                                        }
+                                        thisQueue = nil;
+                                        dispatch_semaphore_signal(semaphore);
+                                    }];
+            
+            dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 5 * 60 * NSEC_PER_SEC));
+        });
+    });
+}
+
++ (UIImage *)image:(UIImage *)image scaledToWith:(CGFloat)width {
+    if (image.size.width <= width) {
+        return image;
+    }
+    
+    CGFloat aspectRatio = width / image.size.width;
+    CGSize newSize = CGSizeMake(image.size.width * aspectRatio, image.size.height * aspectRatio);
+    
+    UIGraphicsBeginImageContextWithOptions( newSize, NO, 0 );
+    [image drawInRect:CGRectMake(0, 0, newSize.width, newSize.height)];
+    UIImage *scaledImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return scaledImage;
 }
 
 #pragma mark - Internal helper methods
@@ -406,6 +461,113 @@
     }
     
     return reactionDict;
+}
+
++ (UIView *)createMessagePopup:(NSString *)message
+                        inView:(UIView *)view {
+    __block UIView *toastView = [[UIView alloc] initWithFrame:CGRectMake(0.0, 0.0, 250.0, 100.0)];
+    toastView.backgroundColor = [UIColor blueColor];
+    toastView.layer.cornerRadius = 5.0f;
+    UILabel *toastViewLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+    [toastView addSubview:toastViewLabel];
+    [view addSubview:toastView];
+    
+    [toastView setTranslatesAutoresizingMaskIntoConstraints:NO];
+    [toastViewLabel setTranslatesAutoresizingMaskIntoConstraints:NO];
+    
+    NSMutableArray *constraints = [NSMutableArray array];
+    [constraints addObject:[NSLayoutConstraint constraintWithItem:toastView
+                                                        attribute:NSLayoutAttributeCenterX
+                                                        relatedBy:NSLayoutRelationEqual
+                                                           toItem:toastViewLabel
+                                                        attribute:NSLayoutAttributeCenterX
+                                                       multiplier:1.0
+                                                         constant:0.0]];
+    [constraints addObject:[NSLayoutConstraint constraintWithItem:toastView
+                                                        attribute:NSLayoutAttributeCenterY
+                                                        relatedBy:NSLayoutRelationEqual
+                                                           toItem:toastViewLabel
+                                                        attribute:NSLayoutAttributeCenterY
+                                                       multiplier:1.0
+                                                         constant:0.0]];
+    [constraints addObject:[NSLayoutConstraint constraintWithItem:toastViewLabel
+                                                        attribute:NSLayoutAttributeLeading
+                                                        relatedBy:NSLayoutRelationEqual
+                                                           toItem:toastView
+                                                        attribute:NSLayoutAttributeLeading
+                                                       multiplier:1.0
+                                                         constant:8.0]];
+    [constraints addObject:[NSLayoutConstraint constraintWithItem:toastViewLabel
+                                                        attribute:NSLayoutAttributeTrailing
+                                                        relatedBy:NSLayoutRelationEqual
+                                                           toItem:toastView
+                                                        attribute:NSLayoutAttributeTrailing
+                                                       multiplier:1.0
+                                                         constant:-8.0]];
+    [constraints addObject:[NSLayoutConstraint constraintWithItem:toastViewLabel
+                                                        attribute:NSLayoutAttributeTop
+                                                        relatedBy:NSLayoutRelationGreaterThanOrEqual
+                                                           toItem:toastView
+                                                        attribute:NSLayoutAttributeTop
+                                                       multiplier:1.0
+                                                         constant:8.0]];
+    [constraints addObject:[NSLayoutConstraint constraintWithItem:toastViewLabel
+                                                        attribute:NSLayoutAttributeBottom
+                                                        relatedBy:NSLayoutRelationLessThanOrEqual
+                                                           toItem:toastView
+                                                        attribute:NSLayoutAttributeBottom
+                                                       multiplier:1.0
+                                                         constant:-8.0]];
+    [toastView addConstraints:constraints];
+    
+    toastViewLabel.numberOfLines = 0;
+    toastViewLabel.textAlignment = NSTextAlignmentCenter;
+    toastViewLabel.textColor = [UIColor whiteColor];
+    toastViewLabel.text = message;
+    toastView.alpha = 0.0f;
+    toastView.hidden = NO;
+    
+    constraints = [NSMutableArray array];
+    [constraints addObject:[NSLayoutConstraint constraintWithItem:view
+                                                        attribute:NSLayoutAttributeCenterX
+                                                        relatedBy:NSLayoutRelationEqual
+                                                           toItem:toastView
+                                                        attribute:NSLayoutAttributeCenterX
+                                                       multiplier:1.0
+                                                         constant:0.0]];
+    [constraints addObject:[NSLayoutConstraint constraintWithItem:view
+                                                        attribute:NSLayoutAttributeCenterY
+                                                        relatedBy:NSLayoutRelationEqual
+                                                           toItem:toastView
+                                                        attribute:NSLayoutAttributeCenterY
+                                                       multiplier:1.0
+                                                         constant:0.0]];
+    [constraints addObject:[NSLayoutConstraint constraintWithItem:toastView
+                                                        attribute:NSLayoutAttributeHeight
+                                                        relatedBy:NSLayoutRelationGreaterThanOrEqual
+                                                           toItem:nil
+                                                        attribute:0
+                                                       multiplier:0.0
+                                                         constant:100.0]];
+    [constraints addObject:[NSLayoutConstraint constraintWithItem:toastView
+                                                        attribute:NSLayoutAttributeWidth
+                                                        relatedBy:NSLayoutRelationEqual
+                                                           toItem:nil
+                                                        attribute:0
+                                                       multiplier:0.0
+                                                         constant:250.0]];
+    [view addConstraints:constraints];
+    
+    [toastView setNeedsLayout];
+    
+    return toastView;
+}
+
++ (NSString *)mediaFilenameForMessage:(TCHMessage *)message {
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+    NSString *cacheDirectory = [paths objectAtIndex:0];
+    NSString *mediaDirectory = cacheDirectory;
+    return [mediaDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@-%@", message.mediaSid, message.mediaFilename ? message.mediaFilename : @"attachment.dat"]];
 }
 
 @end

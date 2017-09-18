@@ -22,7 +22,11 @@
         [self application:application didReceiveRemoteNotification:localNotification];
     }
 
+#if TARGET_IPHONE_SIMULATOR
+    NSLog(@"Skipping push registration since we're in the simulator.");
+#else
     [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:(UIUserNotificationTypeSound | UIUserNotificationTypeAlert | UIUserNotificationTypeBadge) categories:nil]];
+#endif
 
     [[ChatManager sharedManager] presentRootViewController];
     
