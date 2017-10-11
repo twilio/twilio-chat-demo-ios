@@ -146,14 +146,20 @@
                                                                              options:0
                                                                              metrics:metrics
                                                                                views:components]];
-    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"H:[progress]-[body]"
-                                                                             options:NSLayoutFormatAlignAllTop
-                                                                             metrics:metrics
-                                                                               views:components]];
-    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:[progress]-[body]"
-                                                                             options:NSLayoutFormatAlignAllLeading
-                                                                             metrics:metrics
-                                                                               views:components]];
+    [constraints addObject:[NSLayoutConstraint constraintWithItem:self.progressView
+                                                        attribute:NSLayoutAttributeTop
+                                                        relatedBy:NSLayoutRelationEqual
+                                                           toItem:self.messageImageView
+                                                        attribute:NSLayoutAttributeTop
+                                                       multiplier:1.0
+                                                         constant:0.0]];
+    [constraints addObject:[NSLayoutConstraint constraintWithItem:self.progressView
+                                                        attribute:NSLayoutAttributeLeading
+                                                        relatedBy:NSLayoutRelationEqual
+                                                           toItem:self.messageImageView
+                                                        attribute:NSLayoutAttributeLeading
+                                                       multiplier:1.0
+                                                         constant:0.0]];
     for (NSLayoutConstraint *constraint in constraints) {
         [constraint setPriority:UILayoutPriorityRequired];
     }
