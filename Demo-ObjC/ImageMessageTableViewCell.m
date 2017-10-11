@@ -15,6 +15,7 @@
 @property (nonatomic, weak) UILabel *dateLabel;
 @property (nonatomic, weak) UIImageView *avatarImage;
 @property (nonatomic, weak) ReactionsView *reactionsView;
+@property (nonatomic, strong) NSMutableArray<id <NSObject>> *notificationListeners;
 @end
 
 @implementation ImageMessageTableViewCell
@@ -37,6 +38,8 @@
 }
 
 - (void)sharedInit {
+    self.notificationListeners = [NSMutableArray array];
+    
     NSDictionary<NSString *, id> *metrics = [NSMutableDictionary dictionary];
     NSMutableDictionary<NSString *, UIView *> *components = [NSMutableDictionary dictionary];
     
@@ -120,7 +123,7 @@
 }
 
 - (void)dealloc {
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    [self clearNotificationListeners];
 }
 
 - (void)showProgress {
@@ -172,38 +175,50 @@
 - (void)setMessage:(TCHMessage *)message {
     _message = message;
     
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
-    _message = message;
+    [self clearNotificationListeners];
     
     if (message) {
-        [[NSNotificationCenter defaultCenter] addObserverForName:@"MediaProgressUpdate"
-                                                          object:message
-                                                           queue:[NSOperationQueue mainQueue]
-                                                      usingBlock:^(NSNotification * _Nonnull note) {
-                                                          CGFloat progress = [note.userInfo[@"progress"] floatValue];
-                                                          [self.progressView setProgress:progress animated:YES];
-                                                      }];
+        [self.notificationListeners addObject:[[NSNotificationCenter defaultCenter]
+                                                addObserverForName:@"MediaProgressUpdate"
+                                                object:_message
+                                                queue:[NSOperationQueue mainQueue]
+                                                usingBlock:
+                                                ^(NSNotification * _Nonnull note) {
+                                                    CGFloat progress = [note.userInfo[@"progress"] floatValue];
+                                                    [self.progressView setProgress:progress animated:YES];
+                                                }]];
+
+        [self.notificationListeners addObject:[[NSNotificationCenter defaultCenter]
+                                               addObserverForName:@"MediaProgressImage"
+                                               object:_message
+                                               queue:[NSOperationQueue mainQueue]
+                                               usingBlock:
+                                               ^(NSNotification * _Nonnull note) {
+                                                   UIImage *image = note.userInfo[@"image"];
+                                                   UITableView *tableView = note.userInfo[@"tableView"];
+                                                   
+                                                   self.messageImageView.image = image;
+                                                   [tableView reloadData];
+                                               }]];
         
-        [[NSNotificationCenter defaultCenter] addObserverForName:@"MediaProgressImage"
-                                                          object:message
-                                                           queue:[NSOperationQueue mainQueue]
-                                                      usingBlock:^(NSNotification * _Nonnull note) {
-                                                          UIImage *image = note.userInfo[@"image"];
-                                                          UITableView *tableView = note.userInfo[@"tableView"];
-                                                          
-                                                          self.messageImageView.image = image;
-                                                          [tableView reloadData];
-                                                      }];
-        
-        [[NSNotificationCenter defaultCenter] addObserverForName:@"MediaProgressHide"
-                                                          object:message
-                                                           queue:[NSOperationQueue mainQueue]
-                                                      usingBlock:^(NSNotification * _Nonnull note) {
-                                                          [self hideProgress];
-                                                      }];
+        [self.notificationListeners addObject:[[NSNotificationCenter defaultCenter]
+                                               addObserverForName:@"MediaProgressHide"
+                                               object:_message
+                                               queue:[NSOperationQueue mainQueue]
+                                               usingBlock:
+                                               ^(NSNotification * _Nonnull note) {
+                                                   [self hideProgress];
+                                               }]];
     }
 
     [self configureDisplay];
+}
+
+- (void)clearNotificationListeners {
+    for (id<NSObject> listener in self.notificationListeners) {
+        [[NSNotificationCenter defaultCenter] removeObserver:listener];
+    }
+    [self.notificationListeners removeAllObjects];
 }
 
 - (void)configureDisplay {
@@ -241,9 +256,10 @@
 }
 
 - (void)prepareForReuse {
+    [self clearNotificationListeners];
     [self clearCell];
     [self hideProgress];
-    self.message = nil;
+    _message = nil;
     self.delegate = nil;
     [super prepareForReuse];
 }

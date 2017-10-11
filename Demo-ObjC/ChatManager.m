@@ -73,7 +73,6 @@
                         
                         TwilioChatClientProperties *properties = [[TwilioChatClientProperties alloc] init];
                         __weak typeof(self) weakSelf = self;
-                        [TwilioChatClient setLogLevel:TCHLogLevelDebug];
                         [TwilioChatClient chatClientWithToken:token
                                                    properties:properties
                                                      delegate:self
