@@ -196,7 +196,7 @@
 - (void)browsePublicChannels {
     TCHChannels *channelsList = [[[ChatManager sharedManager] client] channelsList];
 
-    void __block (^_completion)();
+    void __block (^_completion)(TCHResult *result, TCHChannelDescriptorPaginator *paginator);
     TCHChannelDescriptorPaginatorCompletion completion = ^(TCHResult *result, TCHChannelDescriptorPaginator *paginator) {
         if (result.isSuccessful) {
             [self.view endEditing:YES];
