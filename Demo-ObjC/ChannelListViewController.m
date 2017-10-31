@@ -321,11 +321,23 @@
 
 
 - (void)setAllMessagesConsumed:(TCHChannel *)channel {
-    [channel.messages setAllMessagesConsumed];
+    [channel.messages setAllMessagesConsumedWithCompletion:^(TCHResult * _Nonnull result, NSUInteger count) {
+        if (result.isSuccessful) {
+            NSLog(@"@@@@@ %s new unconsumed count: %ld", __FUNCTION__, count);
+        } else {
+            NSLog(@"@@@@@ %s consumption update failed: %@", __FUNCTION__, result);
+        }
+    }];
 }
 
 - (void)setNoMessagesConsumed:(TCHChannel *)channel {
-    [channel.messages setNoMessagesConsumed];
+    [channel.messages setNoMessagesConsumedWithCompletion:^(TCHResult * _Nonnull result, NSUInteger count) {
+        if (result.isSuccessful) {
+            NSLog(@"@@@@@ %s new unconsumed count: %ld", __FUNCTION__, count);
+        } else {
+            NSLog(@"@@@@@ %s consumption update failed: %@", __FUNCTION__, result);
+        }
+    }];
 }
 
 - (void)leaveChannel:(TCHChannel *)channel {
