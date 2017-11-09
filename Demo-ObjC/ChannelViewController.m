@@ -474,7 +474,7 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
             cell = textMessageCell;
         }
         
-        [self.channel.messages advanceLastConsumedMessageIndex:message.index];
+        [self.channel.messages advanceLastConsumedMessageIndex:message.index completion:nil];
         [cell layoutIfNeeded];
     } else {
         cell = [[UITableViewCell alloc] initWithFrame:CGRectZero];

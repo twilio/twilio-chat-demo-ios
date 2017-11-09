@@ -196,7 +196,7 @@
 - (void)browsePublicChannels {
     TCHChannels *channelsList = [[[ChatManager sharedManager] client] channelsList];
 
-    void __block (^_completion)();
+    void __block (^_completion)(TCHResult *result, TCHChannelDescriptorPaginator *paginator);
     TCHChannelDescriptorPaginatorCompletion completion = ^(TCHResult *result, TCHChannelDescriptorPaginator *paginator) {
         if (result.isSuccessful) {
             [self.view endEditing:YES];
@@ -321,11 +321,23 @@
 
 
 - (void)setAllMessagesConsumed:(TCHChannel *)channel {
-    [channel.messages setAllMessagesConsumed];
+    [channel.messages setAllMessagesConsumedWithCompletion:^(TCHResult * _Nonnull result, NSUInteger count) {
+        if (result.isSuccessful) {
+            NSLog(@"@@@@@ %s new unconsumed count: %ld", __FUNCTION__, count);
+        } else {
+            NSLog(@"@@@@@ %s consumption update failed: %@", __FUNCTION__, result);
+        }
+    }];
 }
 
 - (void)setNoMessagesConsumed:(TCHChannel *)channel {
-    [channel.messages setNoMessagesConsumed];
+    [channel.messages setNoMessagesConsumedWithCompletion:^(TCHResult * _Nonnull result, NSUInteger count) {
+        if (result.isSuccessful) {
+            NSLog(@"@@@@@ %s new unconsumed count: %ld", __FUNCTION__, count);
+        } else {
+            NSLog(@"@@@@@ %s consumption update failed: %@", __FUNCTION__, result);
+        }
+    }];
 }
 
 - (void)leaveChannel:(TCHChannel *)channel {
