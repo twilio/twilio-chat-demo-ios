@@ -259,6 +259,12 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
                                                        [weakSelf addMember];
                                                    }]];
 
+    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Remove Member"
+                                                     style:UIAlertActionStyleDefault
+                                                   handler:^(UIAlertAction *action) {
+                                                       [weakSelf removeMember];
+                                                   }]];
+    
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"My Friendly Name"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
@@ -842,6 +848,44 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
                                          NSLog(@"%s: %@", __FUNCTION__, result.error);
                                      }
                                  }];
+    };
+    
+    [self promptUserWithTitle:title
+                  placeholder:placeholder
+                 initialValue:initialValue
+                  actionTitle:actionTitle
+                       action:action];
+}
+
+- (void)removeMember {
+    NSString *title = @"Remove";
+    NSString *placeholder = @"User To Remove";
+    NSString *initialValue = @"";
+    NSString *actionTitle = @"Remove";
+    
+    __weak __typeof(self) weakSelf = self;
+    void (^action)(NSString *) = ^void(NSString *newValue) {
+        if (!newValue || newValue.length == 0) {
+            return;
+        }
+        
+        TCHMember *member = [self.channel memberWithIdentity:newValue];
+        if (!member) {
+            [DemoHelpers displayToastWithMessage:@"User not found on this channel."
+                                          inView:weakSelf.view];
+            return;
+        }
+        
+        [self.channel.members removeMember:member completion:^(TCHResult * _Nonnull result) {
+            if (result.isSuccessful) {
+                [DemoHelpers displayToastWithMessage:@"User removed."
+                                              inView:weakSelf.view];
+            } else {
+                [DemoHelpers displayToastWithMessage:@"User could not be removed."
+                                              inView:weakSelf.view];
+                NSLog(@"%s: %@", __FUNCTION__, result.error);
+            }
+        }];
     };
     
     [self promptUserWithTitle:title
