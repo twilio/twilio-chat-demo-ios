@@ -259,6 +259,12 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
                                                        [weakSelf addMember];
                                                    }]];
 
+    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Remove Member"
+                                                     style:UIAlertActionStyleDefault
+                                                   handler:^(UIAlertAction *action) {
+                                                       [weakSelf removeMember];
+                                                   }]];
+    
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"My Friendly Name"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
@@ -539,6 +545,10 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
                                            }];
     }
     return YES;
+}
+
+- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
+    [self.messageInput endEditing:YES];
 }
 
 #pragma mark - Internal methods
@@ -851,6 +861,44 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
                        action:action];
 }
 
+- (void)removeMember {
+    NSString *title = @"Remove";
+    NSString *placeholder = @"User To Remove";
+    NSString *initialValue = @"";
+    NSString *actionTitle = @"Remove";
+    
+    __weak __typeof(self) weakSelf = self;
+    void (^action)(NSString *) = ^void(NSString *newValue) {
+        if (!newValue || newValue.length == 0) {
+            return;
+        }
+        
+        TCHMember *member = [self.channel memberWithIdentity:newValue];
+        if (!member) {
+            [DemoHelpers displayToastWithMessage:@"User not found on this channel."
+                                          inView:weakSelf.view];
+            return;
+        }
+        
+        [self.channel.members removeMember:member completion:^(TCHResult * _Nonnull result) {
+            if (result.isSuccessful) {
+                [DemoHelpers displayToastWithMessage:@"User removed."
+                                              inView:weakSelf.view];
+            } else {
+                [DemoHelpers displayToastWithMessage:@"User could not be removed."
+                                              inView:weakSelf.view];
+                NSLog(@"%s: %@", __FUNCTION__, result.error);
+            }
+        }];
+    };
+    
+    [self promptUserWithTitle:title
+                  placeholder:placeholder
+                 initialValue:initialValue
+                  actionTitle:actionTitle
+                       action:action];
+}
+
 - (void)listMembers {
     [self.channel.members membersWithCompletion:^(TCHResult *result, TCHMemberPaginator *paginator) {
         if (result.isSuccessful) {
@@ -917,6 +965,12 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     CGFloat keyboardHeight = [[userInfo objectForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue].size.height;
     
     self.keyboardAdjustmentConstraint.constant = keyboardHeight;
+
+    // Adjust for safeAreaInsets changing
+    if (@available(iOS 11.0, *)) {
+        self.keyboardAdjustmentConstraint.constant -= self.view.safeAreaInsets.bottom;
+    }
+    
     [self.view setNeedsLayout];
 }
 

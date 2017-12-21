@@ -539,6 +539,19 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     popoverPresentationController.permittedArrowDirections = 0;
 }
 
+- (void)displayNotificationForChannelSid:(NSString *)channelSid
+                     messagePlaceholder:(NSString *)messagePlaceholder {
+    [[[[ChatManager sharedManager] client] channelsList] channelWithSidOrUniqueName:channelSid
+                                                                         completion:
+     ^(TCHResult *result, TCHChannel *channel) {
+         if (result.isSuccessful) {
+             [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:messagePlaceholder, channel.friendlyName] inView:self.view];
+         } else {
+             NSLog(@"Unable to load channel referenced in push: %@", result.error);
+         }
+     }];
+}
+
 #pragma mark - TwilioChatClientDelegate
 
 - (void)chatClient:(TwilioChatClient *)client synchronizationStatusUpdated:(TCHClientSynchronizationStatus)status {
@@ -568,14 +581,23 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (void)chatClient:(TwilioChatClient *)client notificationNewMessageReceivedForChannelSid:(NSString *)channelSid messageIndex:(NSUInteger)messageIndex {
-    [[[[ChatManager sharedManager] client] channelsList] channelWithSidOrUniqueName:channelSid
-                                                                         completion:^(TCHResult *result, TCHChannel *channel) {
-                                                                             if (result.isSuccessful) {
-                                                                                 [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"New message on channel '%@'.", channel.friendlyName] inView:self.view];
-                                                                             } else {
-                                                                                 NSLog(@"Unable to load channel referenced in push: %@", result.error);
-                                                                             }
-                                                                         }];
+    [self displayNotificationForChannelSid:channelSid
+                       messagePlaceholder:@"New message on channel '%@'."];
+}
+
+- (void)chatClient:(TwilioChatClient *)client notificationAddedToChannelWithSid:(NSString *)channelSid {
+    [self displayNotificationForChannelSid:channelSid
+                       messagePlaceholder:@"You were added to channel '%@'."];
+}
+
+- (void)chatClient:(TwilioChatClient *)client notificationInvitedToChannelWithSid:(NSString *)channelSid {
+    [self displayNotificationForChannelSid:channelSid
+                       messagePlaceholder:@"You were invited to channel '%@'."];
+}
+
+- (void)chatClient:(TwilioChatClient *)client notificationRemovedFromChannelWithSid:(NSString *)channelSid {
+    [self displayNotificationForChannelSid:channelSid
+                       messagePlaceholder:@"You were removed from channel '%@'."];
 }
 
 - (void)chatClient:(TwilioChatClient *)client notificationUpdatedBadgeCount:(NSUInteger)badgeCount {
