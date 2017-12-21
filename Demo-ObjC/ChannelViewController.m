@@ -547,6 +547,10 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     return YES;
 }
 
+- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
+    [self.messageInput endEditing:YES];
+}
+
 #pragma mark - Internal methods
 
 - (void)uploadPhoto {
@@ -961,6 +965,12 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     CGFloat keyboardHeight = [[userInfo objectForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue].size.height;
     
     self.keyboardAdjustmentConstraint.constant = keyboardHeight;
+
+    // Adjust for safeAreaInsets changing
+    if (@available(iOS 11.0, *)) {
+        self.keyboardAdjustmentConstraint.constant -= self.view.safeAreaInsets.bottom;
+    }
+    
     [self.view setNeedsLayout];
 }
 
