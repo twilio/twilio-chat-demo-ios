@@ -2,7 +2,7 @@
 //  ChannelViewController.m
 //  Twilio Chat Demo
 //
-//  Copyright (c) 2017 Twilio, Inc. All rights reserved.
+//  Copyright (c) 2018 Twilio, Inc. All rights reserved.
 //
 
 #import "ChannelViewController.h"
