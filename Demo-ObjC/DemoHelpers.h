@@ -165,6 +165,6 @@
  @return The scaled (or original) image.
  */
 + (nonnull UIImage *)image:(nonnull UIImage *)image
-              scaledToWith:(CGFloat)width;
+             scaledToWidth:(CGFloat)width;
 
 @end

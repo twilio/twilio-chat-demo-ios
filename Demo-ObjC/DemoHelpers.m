@@ -311,7 +311,7 @@
     });
 }
 
-+ (UIImage *)image:(UIImage *)image scaledToWith:(CGFloat)width {
++ (UIImage *)image:(UIImage *)image scaledToWidth:(CGFloat)width {
     if (image.size.width <= width) {
         return image;
     }
@@ -565,8 +565,7 @@
 
 + (NSString *)mediaFilenameForMessage:(TCHMessage *)message {
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
-    NSString *cacheDirectory = [paths objectAtIndex:0];
-    NSString *mediaDirectory = cacheDirectory;
+    NSString *mediaDirectory = [paths objectAtIndex:0];
     return [mediaDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@-%@", message.mediaSid, message.mediaFilename ? message.mediaFilename : @"attachment.dat"]];
 }
 

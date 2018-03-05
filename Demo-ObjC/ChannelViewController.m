@@ -447,7 +447,7 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
             
             if (cachedImage) {
                 cachedImage = [DemoHelpers image:cachedImage
-                                    scaledToWith:imageMessageCell.messageImageView.frame.size.width];
+                                   scaledToWidth:imageMessageCell.messageImageView.frame.size.width];
                 [imageMessageCell.messageImageView setImage:cachedImage];
             } else {
                 [imageMessageCell showProgress];
