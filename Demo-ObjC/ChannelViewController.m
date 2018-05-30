@@ -73,7 +73,9 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
 
 - (void)dealloc {
     if (self.channel) {
-        self.channel.delegate = nil;
+        if (self.channel.delegate == self) {
+            self.channel.delegate = nil;
+        }
         
         [[NSNotificationCenter defaultCenter] removeObserver:self];
     }
