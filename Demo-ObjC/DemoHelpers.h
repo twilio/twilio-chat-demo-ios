@@ -2,7 +2,7 @@
 //  DemoHelpers.h
 //  Twilio Chat Demo
 //
-//  Copyright (c) 2017 Twilio, Inc. All rights reserved.
+//  Copyright (c) 2018 Twilio, Inc. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
@@ -165,6 +165,6 @@
  @return The scaled (or original) image.
  */
 + (nonnull UIImage *)image:(nonnull UIImage *)image
-              scaledToWith:(CGFloat)width;
+             scaledToWidth:(CGFloat)width;
 
 @end

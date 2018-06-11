@@ -2,7 +2,7 @@
 //  ChannelViewController.m
 //  Twilio Chat Demo
 //
-//  Copyright (c) 2017 Twilio, Inc. All rights reserved.
+//  Copyright (c) 2018 Twilio, Inc. All rights reserved.
 //
 
 #import "ChannelViewController.h"
@@ -73,7 +73,9 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
 
 - (void)dealloc {
     if (self.channel) {
-        self.channel.delegate = nil;
+        if (self.channel.delegate == self) {
+            self.channel.delegate = nil;
+        }
         
         [[NSNotificationCenter defaultCenter] removeObserver:self];
     }
@@ -447,7 +449,7 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
             
             if (cachedImage) {
                 cachedImage = [DemoHelpers image:cachedImage
-                                    scaledToWith:imageMessageCell.messageImageView.frame.size.width];
+                                   scaledToWidth:imageMessageCell.messageImageView.frame.size.width];
                 [imageMessageCell.messageImageView setImage:cachedImage];
             } else {
                 [imageMessageCell showProgress];
