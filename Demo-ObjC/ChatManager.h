@@ -27,4 +27,7 @@
 
 - (NSString *)identity;
 
+- (void)chatClientTokenWillExpire:(TwilioChatClient *)client;
+- (void)chatClientTokenExpired:(TwilioChatClient *)client;
+
 @end

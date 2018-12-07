@@ -604,4 +604,12 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     [[UIApplication sharedApplication] setApplicationIconBadgeNumber:badgeCount];
 }
 
+- (void)chatClientTokenWillExpire:(TwilioChatClient *)client {
+    [[ChatManager sharedManager] chatClientTokenWillExpire:client];
+}
+
+- (void)chatClientTokenExpired:(TwilioChatClient *)client {
+    [[ChatManager sharedManager] chatClientTokenExpired:client];
+}
+
 @end

@@ -8,10 +8,7 @@
 #import "AppDelegate.h"
 #import "ChatManager.h"
 
-#import <TwilioAccessManager/TwilioAccessManager.h>
-
-@interface ChatManager() <TwilioAccessManagerDelegate, TwilioChatClientDelegate>
-@property (nonatomic, strong) TwilioAccessManager *accessManager;
+@interface ChatManager() <TwilioChatClientDelegate>
 @property (nonatomic, strong) TwilioChatClient *client;
 
 @property (nonatomic, strong) NSData *lastToken;
@@ -72,25 +69,12 @@
                         [self storeIdentity:identity];
                         
                         TwilioChatClientProperties *properties = [[TwilioChatClientProperties alloc] init];
-                        __weak typeof(self) weakSelf = self;
                         [TwilioChatClient chatClientWithToken:token
                                                    properties:properties
                                                      delegate:self
                                                    completion:^(TCHResult *result, TwilioChatClient *chatClient) {
                                                        if ([result isSuccessful]) {
                                                            self.client = chatClient;
-                                                           
-                                                           self.accessManager = [TwilioAccessManager accessManagerWithToken:token
-                                                                                                                   delegate:weakSelf];
-                                                           
-                                                           __weak typeof(weakSelf.client) weakClient = weakSelf.client;
-                                                           [self.accessManager registerClient:self.client forUpdates:^(NSString * _Nonnull updatedToken) {
-                                                               [weakClient updateToken:updatedToken completion:^(TCHResult *result) {
-                                                                   if (![result isSuccessful]) {
-                                                                       // retry token update or warn user
-                                                                   }
-                                                               }];
-                                                           }];
                                                            
                                                            dispatch_async(dispatch_get_main_queue(), ^{
                                                                [[ChatManager sharedManager] updateChatClient];
@@ -188,22 +172,6 @@
     return [[NSUserDefaults standardUserDefaults] objectForKey:@"identity"];
 }
     
-#pragma mark - TwilioAccessManagerDelegate implementation
-    
-- (void)accessManagerTokenWillExpire:(nonnull TwilioAccessManager *)accessManager {
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-        [self tokenForIdentity:[self identity] completion:^(BOOL success, NSString *token) {
-            if (success) {
-                [accessManager updateToken:token];
-            }
-        }];
-    });
-}
-    
-- (void)accessManagerTokenInvalid:(nonnull TwilioAccessManager *)accessManager {
-    NSLog(@"error in token");
-}
-
 #pragma mark - TwilioChatClientDelegate temporary impl until channels list takes over
 
 // Can occur before we transfer the delegate to the channels list VC
@@ -215,4 +183,29 @@
     NSLog(@"error received: %@", error);
 }
     
+- (void)chatClientTokenWillExpire:(TwilioChatClient *)client {
+    [self renewTokenForClient:client];
+}
+
+- (void)chatClientTokenExpired:(TwilioChatClient *)client {
+    [self renewTokenForClient:client];
+}
+
+- (void)renewTokenForClient:(TwilioChatClient *)client {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+        [self tokenForIdentity:[self identity] completion:^(BOOL success, NSString *token) {
+            if (success) {
+                [client updateToken:token
+                         completion:^(TCHResult * _Nonnull result) {
+                             if (!result.isSuccessful) {
+                                 NSLog(@"error updating token: %@", result.error);
+                             }
+                         }];
+            } else {
+                NSLog(@"error receiving updated token");
+            }
+        }];
+    });
+}
+
 @end
