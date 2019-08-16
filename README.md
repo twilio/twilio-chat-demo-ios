@@ -15,7 +15,9 @@ The first step is to bring the .framework into the project.  The easiest way to 
 
 Next, in the ChatManager.m file, find the line that Xcode will let you know is an error.  Delete that #error line and fill in a client token in the line below:
 
-        return nil;
+```objc
+return nil;
+```
 
 You can either paste in a client token you have generated elsewhere or update this portion of code to call out to a webservice you control that can generate tokens.
 
@@ -25,12 +27,14 @@ In order to allow members of a channel other than a message's original author to
 
 To learn more about Roles and Channels, you can [visit the Role documentation](https://www.twilio.com/docs/api/chat/rest/roles#action-update).  A quick example of enabling editing of any message's attributes using curl is:
 
-    curl -XPOST https://chat.twilio.com/v1/Services/{service sid}/Roles/{role sid} \
-        -d "FriendlyName=channel user" \ 
-        -d "Permission=sendMessage" \ 
-        -d "Permission=leaveChannel" \ 
-        -d "Permission=editOwnMessage" \ 
-        -d "Permission=editOwnMessageAttributes" \ 
-        -d "Permission=deleteOwnMessage" \ 
-        -d "Permission=editAnyMessageAttributes" \ 
-        -u '{twilio account sid}:{twilio auth token}'
+```sh
+curl -XPOST https://chat.twilio.com/v1/Services/{service sid}/Roles/{role sid} \
+    -d "FriendlyName=channel user" \ 
+    -d "Permission=sendMessage" \ 
+    -d "Permission=leaveChannel" \ 
+    -d "Permission=editOwnMessage" \ 
+    -d "Permission=editOwnMessageAttributes" \ 
+    -d "Permission=deleteOwnMessage" \ 
+    -d "Permission=editAnyMessageAttributes" \ 
+    -u '{twilio account sid}:{twilio auth token}'
+```
