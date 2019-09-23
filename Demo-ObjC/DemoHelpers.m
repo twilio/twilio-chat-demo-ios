@@ -119,9 +119,13 @@
     UIImage *image = [self avatarForEmail:email identity:identity size:size scalingFactor:scale];
     
     if (user.isOnline) {
-        image = [self addIndicatorToAvatar:image color:[UIColor greenColor]];
+        image = [self addIndicatorToAvatar:image color:UIColor.systemGreenColor];
     } else if (user.isNotifiable) {
-        image = [self addIndicatorToAvatar:image color:[UIColor lightGrayColor]];
+        if (@available(iOS 13.0, *)) {
+            image = [self addIndicatorToAvatar:image color:[UIColor systemGray3Color]];
+        } else {
+            image = [self addIndicatorToAvatar:image color:[UIColor lightGrayColor]];
+        }
     }
     
     return image;
@@ -466,7 +470,7 @@
 + (UIView *)createMessagePopup:(NSString *)message
                         inView:(UIView *)view {
     __block UIView *toastView = [[UIView alloc] initWithFrame:CGRectMake(0.0, 0.0, 250.0, 100.0)];
-    toastView.backgroundColor = [UIColor blueColor];
+    toastView.backgroundColor = UIColor.systemBlueColor;
     toastView.layer.cornerRadius = 5.0f;
     UILabel *toastViewLabel = [[UILabel alloc] initWithFrame:CGRectZero];
     [toastView addSubview:toastViewLabel];
@@ -522,7 +526,11 @@
     
     toastViewLabel.numberOfLines = 0;
     toastViewLabel.textAlignment = NSTextAlignmentCenter;
-    toastViewLabel.textColor = [UIColor whiteColor];
+    if (@available(iOS 13.0, *)) {
+        toastViewLabel.textColor = UIColor.labelColor;
+    } else {
+         toastViewLabel.textColor = UIColor.whiteColor;
+    }
     toastViewLabel.text = message;
     toastView.alpha = 0.0f;
     toastView.hidden = NO;

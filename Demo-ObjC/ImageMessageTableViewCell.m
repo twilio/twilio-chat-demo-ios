@@ -257,7 +257,11 @@
         self.reactionsView.reactions = reactions;
     }
     if ([self.localIdentity isEqualToString:[self message].author]) {
-        self.contentView.backgroundColor = [UIColor colorWithWhite:0.96f alpha:1.0f];
+        if (@available(iOS 13.0, *)) {
+            self.contentView.backgroundColor = UIColor.systemBackgroundColor;
+        } else {
+            self.contentView.backgroundColor = [UIColor colorWithWhite:0.96f alpha:1.0f];
+        }
     }
 }
 
@@ -271,7 +275,11 @@
 }
 
 - (void)clearCell {
-    self.contentView.backgroundColor = [UIColor whiteColor];
+    if (@available(iOS 13.0, *)) {
+        self.contentView.backgroundColor = UIColor.systemBackgroundColor;
+    } else {
+        self.contentView.backgroundColor = UIColor.whiteColor;
+    }
     self.reactionsView.reactions = @[];
     self.reactionsView.localIdentity = @"";
     self.authorLabel.text = @"";

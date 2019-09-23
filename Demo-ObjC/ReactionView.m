@@ -105,7 +105,11 @@
     self.layer.cornerRadius = 5;
     self.layer.masksToBounds = YES;
     self.layer.borderWidth = 1.0f;
-    self.layer.borderColor = [[UIColor lightGrayColor] CGColor];
+    if (@available(iOS 13.0, *)) {
+        self.layer.borderColor = UIColor.systemGray3Color.CGColor;
+    } else {
+        self.layer.borderColor = UIColor.lightGrayColor.CGColor;
+    }
 
     [self setNeedsLayout];
 }
@@ -127,7 +131,11 @@
     if (self.localUserReacted) {
         self.backgroundColor = [UIColor colorWithHue:0.2 saturation:0.2 brightness:0.9 alpha:1.0];
     } else {
-        self.backgroundColor = [UIColor whiteColor];
+        if (@available(iOS 13.0, *)) {
+            self.backgroundColor = UIColor.systemBackgroundColor;
+        } else {
+            self.backgroundColor = UIColor.whiteColor;
+        }
     }
     [self setNeedsDisplay];
 }
@@ -185,7 +193,11 @@
 
 - (void)tapped:(UIGestureRecognizer *)gestureRecognizer {
     [UIView animateWithDuration:0.5 animations:^{
-        self.backgroundColor = [UIColor colorWithWhite:0.8 alpha:1.0];
+        if (@available(iOS 13.0, *)) {
+            self.backgroundColor = UIColor.systemGray5Color;
+        } else {
+            self.backgroundColor = [UIColor colorWithWhite:0.8 alpha:1.0];
+        }
     } completion:nil];
 
     if (self.localUserReacted) {

@@ -65,7 +65,11 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
-    [cell setBackgroundColor:[UIColor whiteColor]];
+    if (@available(iOS 13.0, *)) {
+        [cell setBackgroundColor:UIColor.systemBackgroundColor];
+    } else {
+        [cell setBackgroundColor:UIColor.whiteColor];
+    }
     
     TCHChannelDescriptor *descriptor = self.publicChannelDescriptors[indexPath.row];
     

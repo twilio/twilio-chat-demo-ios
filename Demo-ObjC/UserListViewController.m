@@ -65,7 +65,11 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
-    [cell setBackgroundColor:[UIColor whiteColor]];
+    if (@available(iOS 13.0, *)) {
+        [cell setBackgroundColor:[UIColor systemBackgroundColor]];
+    } else {
+        [cell setBackgroundColor:UIColor.whiteColor];
+    }
     
     id user = self.users[indexPath.row];
     
@@ -73,13 +77,13 @@
         TCHMember *member = user;
         [[[[ChatManager sharedManager] client] users] subscribedUserWithIdentity:member.identity
                                                                       completion:^(TCHResult *result, TCHUser *user) {
-                                                                          cell.textLabel.text = [NSString stringWithFormat:@"%@", [DemoHelpers displayNameForUser:user]];
-                                                                          cell.imageView.image = [DemoHelpers avatarForUser:user size:44.0 scalingFactor:2.0];
-                                                                          
-                                                                          if ([user.identity isEqualToString:[[[[ChatManager sharedManager] client] user] identity]]) {
-                                                                              [cell setBackgroundColor:[UIColor colorWithWhite:0.96f alpha:1.0f]];
-                                                                          }
-                                                                      }];
+            cell.textLabel.text = [NSString stringWithFormat:@"%@", [DemoHelpers displayNameForUser:user]];
+            cell.imageView.image = [DemoHelpers avatarForUser:user size:44.0 scalingFactor:2.0];
+
+            if ([user.identity isEqualToString:[[[[ChatManager sharedManager] client] user] identity]]) {
+                [cell setBackgroundColor:UIColor.groupTableViewBackgroundColor];
+            }
+        }];
     } else {
         NSString *userIdentity = user;
         cell.textLabel.text = [NSString stringWithFormat:@"%@", userIdentity];
