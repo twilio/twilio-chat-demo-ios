@@ -431,17 +431,17 @@
         UIColor *channelColor = nil;
         switch (channel.status) {
             case TCHChannelStatusInvited:
-                channelColor = [UIColor blueColor];
+                channelColor = UIColor.systemBlueColor;
                 break;
             case TCHChannelStatusJoined:
-                channelColor = [UIColor greenColor];
+                channelColor = UIColor.systemGreenColor;
                 break;
             case TCHChannelStatusNotParticipating:
-                channelColor = [UIColor grayColor];
+                channelColor = UIColor.systemGrayColor;
                 break;
             case TCHChannelStatusUnknown:
                 // Will not happen for synchronized channels
-                channelColor = [UIColor grayColor];
+                channelColor = UIColor.systemGrayColor;
                 break;
         }
         channelCell.nameLabel.textColor = channelColor;

@@ -7,8 +7,9 @@
 
 #import "AppDelegate.h"
 #import "ChatManager.h"
+@import UserNotifications;
 
-@interface AppDelegate ()
+@interface AppDelegate () <UNUserNotificationCenterDelegate>
 
 @end
 
@@ -17,15 +18,24 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     [[UIApplication sharedApplication] setApplicationIconBadgeNumber:0];
 
-    NSDictionary* localNotification = [launchOptions objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
-    if (localNotification) {
-        [self application:application didReceiveRemoteNotification:localNotification];
-    }
-
 #if TARGET_IPHONE_SIMULATOR
     NSLog(@"Skipping push registration since we're in the simulator.");
 #else
-    [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:(UIUserNotificationTypeSound | UIUserNotificationTypeAlert | UIUserNotificationTypeBadge) categories:nil]];
+    if (@available(iOS 10.0, *)) {
+        [UNUserNotificationCenter.currentNotificationCenter requestAuthorizationWithOptions:UNAuthorizationOptionBadge | UNAuthorizationOptionAlert | UNAuthorizationOptionSound
+                                                                          completionHandler:^(BOOL granted, NSError * _Nullable error) {
+            NSLog(@"access granted %@", granted ? @"YES" : @"NO");
+        }];
+        UNUserNotificationCenter.currentNotificationCenter.delegate = self;
+    } else {
+        NSDictionary* localNotification = [launchOptions objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
+        if (localNotification) {
+            [self application:application didReceiveRemoteNotification:localNotification];
+        }
+
+        [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:(UIUserNotificationTypeSound | UIUserNotificationTypeAlert | UIUserNotificationTypeBadge) categories:nil]];
+    }
+    [application registerForRemoteNotifications];
 #endif
 
     [[ChatManager sharedManager] presentRootViewController];
