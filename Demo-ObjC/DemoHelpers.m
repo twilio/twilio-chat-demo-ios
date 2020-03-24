@@ -113,7 +113,7 @@
 + (UIImage *)avatarForUser:(TCHUser *)user
                       size:(NSUInteger)size
              scalingFactor:(CGFloat)scale {
-    NSString *email = user.attributes[@"email"];
+    NSString *email = user.attributes.dictionary[@"email"];
     NSString *identity = user.identity;
     
     UIImage *image = [self avatarForEmail:email identity:identity size:size scalingFactor:scale];
@@ -166,7 +166,7 @@
 }
 
 + (void)reactionIncrement:(NSString *)emojiString message:(TCHMessage *)message user:(NSString *)identity {
-    NSMutableDictionary *attributes = [DemoHelpers deepMutableCopyOfDictionary:message.attributes];
+    NSMutableDictionary *attributes = [DemoHelpers deepMutableCopyOfDictionary:message.attributes.dictionary];
     if (!attributes) {
         attributes = [NSMutableDictionary dictionary];
     }
@@ -175,7 +175,7 @@
     if (![reactionDict[@"users"] containsObject:identity]) {
         [reactionDict[@"users"] addObject:identity];
         
-        [message setAttributes:attributes
+        [message setAttributes:[[TCHJsonAttributes alloc] initWithDictionary:attributes]
                     completion:^(TCHResult *result) {
                         if (!result.isSuccessful) {
                             NSLog(@"error occurred incrementing reaction: %@", emojiString);
@@ -185,7 +185,7 @@
 }
 
 + (void)reactionDecrement:(NSString *)emojiString message:(TCHMessage *)message user:(NSString *)identity {
-    NSMutableDictionary *attributes = [DemoHelpers deepMutableCopyOfDictionary:message.attributes];
+    NSMutableDictionary *attributes = [DemoHelpers deepMutableCopyOfDictionary:message.attributes.dictionary];
     if (!attributes) {
         attributes = [NSMutableDictionary dictionary];
     }
@@ -199,7 +199,7 @@
             [attributes[@"reactions"] removeObject:reactionDict];
         }
         
-        [message setAttributes:attributes
+        [message setAttributes:[[TCHJsonAttributes alloc] initWithDictionary:attributes]
                     completion:^(TCHResult *result) {
                         if (!result.isSuccessful) {
                             NSLog(@"error occurred decrementing reaction: %@", emojiString);

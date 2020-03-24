@@ -251,7 +251,7 @@
         self.avatarImage.image = [DemoHelpers avatarForAuthor:self.message.author size:44.0 scalingFactor:2.0];
     }
     self.dateLabel.text = [DemoHelpers messageDisplayForDate:self.message.timestampAsDate];
-    NSArray *reactions = self.message.attributes[@"reactions"];
+    NSArray *reactions = self.message.attributes.dictionary[@"reactions"];
     if (reactions) {
         self.reactionsView.localIdentity = [self localIdentity];
         self.reactionsView.reactions = reactions;

@@ -651,7 +651,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 
 - (void)changeAvatarEmail {
     TwilioChatClient *client = [[ChatManager sharedManager] client];
-    NSMutableDictionary<NSString *, id> *attributes = [[[client user] attributes] mutableCopy];
+    NSMutableDictionary<NSString *, id> *attributes = [client.user.attributes.dictionary mutableCopy];
     NSString *title = @"Avatar Email Address";
     NSString *placeholder = @"Email Address";
     NSString *initialValue = attributes[@"email"];
@@ -660,7 +660,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     __weak __typeof(self) weakSelf = self;
     void (^action)(NSString *) = ^void(NSString *newValue) {
         attributes[@"email"] = newValue;
-        [[client user] setAttributes:attributes
+        [[client user] setAttributes:[[TCHJsonAttributes alloc] initWithDictionary:attributes]
                           completion:^(TCHResult *result) {
                               if (result.isSuccessful) {
                                   [DemoHelpers displayToastWithMessage:@"Avatar email changed."
@@ -683,17 +683,17 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 - (void)changeTopic {
     NSString *title = @"Topic";
     NSString *placeholder = @"Topic";
-    NSString *initialValue = [[self.channel attributes] objectForKey:@"topic"];
+    NSString *initialValue = self.channel.attributes.dictionary[@"topic"];
     NSString *actionTitle = @"Set";
     
     __weak __typeof(self) weakSelf = self;
     void (^action)(NSString *) = ^void(NSString *newValue) {
-        NSMutableDictionary *attributes = [self.channel.attributes mutableCopy];
+        NSMutableDictionary *attributes = [self.channel.attributes.dictionary mutableCopy];
         if (!attributes) {
             attributes = [NSMutableDictionary dictionary];
         }
         attributes[@"topic"] = newValue;
-        [self.channel setAttributes:attributes
+        [self.channel setAttributes:[[TCHJsonAttributes alloc] initWithDictionary:attributes]
                          completion:^(TCHResult *result) {
                              if (result.isSuccessful) {
                                  [DemoHelpers displayToastWithMessage:@"Topic changed."
@@ -1310,7 +1310,7 @@ typingEndedOnChannel:(TCHChannel *)channel
 
 - (void)showUsersForReaction:(NSString *)emojiString
                      message:(TCHMessage *)message {
-    NSDictionary *attributes = message.attributes;
+    NSDictionary *attributes = message.attributes.dictionary;
     if (!attributes) {
         return;
     }

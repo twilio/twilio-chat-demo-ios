@@ -147,7 +147,7 @@
     }
     self.dateLabel.text = [DemoHelpers messageDisplayForDate:self.message.timestampAsDate];
     self.bodyLabel.text = self.message.body;
-    NSArray *reactions = self.message.attributes[@"reactions"];
+    NSArray *reactions = self.message.attributes.dictionary[@"reactions"];
     if (reactions) {
         self.reactionsView.localIdentity = [self localIdentity];
         self.reactionsView.reactions = reactions;

@@ -1,0 +1,16 @@
+PODS:
+  - TwilioChatClient (3.0.1)
+
+DEPENDENCIES:
+  - TwilioChatClient (~> 3)
+
+SPEC REPOS:
+  trunk:
+    - TwilioChatClient
+
+SPEC CHECKSUMS:
+  TwilioChatClient: 2a26ce3a86b4190e2e939ddbe5b0da9927846f66
+
+PODFILE CHECKSUM: 987ab4233173b33794bc5d03e6cae6bb0fd86414
+
+COCOAPODS: 1.9.1
