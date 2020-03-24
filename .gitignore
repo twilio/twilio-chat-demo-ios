@@ -8,8 +8,10 @@ ehthumbs.db
 Thumbs.db
 
 *.xccheckout
+*.xcworkspace
 !*.xcworkspacedata
 
 # build folders
 xcuserdata/
 build/
+Pods/

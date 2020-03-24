@@ -1,5 +1,5 @@
-platform :ios, '9.0'
+platform :ios, '11.0'
 
 target 'Demo-ObjC' do
-  pod 'TwilioChatClient', '~> 2.6.2'
+  pod 'TwilioChatClient', '~> 3'
 end
