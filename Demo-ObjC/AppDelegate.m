@@ -62,7 +62,7 @@
 }
 
 - (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo {
-    // If your application supports multiple types of push notifications, you may wish to limit which ones you send to the TwilioChatClient here
+    // If your application supports multiple types of push notifications, you may wish to limit which ones you send to the TwilioConversationsClient here
     [[ChatManager sharedManager] receivedNotification:userInfo];
 }
 

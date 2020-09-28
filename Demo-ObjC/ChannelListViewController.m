@@ -12,7 +12,7 @@
 #import "DemoHelpers.h"
 #import "PublicChannelListViewController.h"
 
-@interface ChannelListViewController () <TwilioChatClientDelegate, UITableViewDataSource, UITableViewDelegate, UIPopoverPresentationControllerDelegate>
+@interface ChannelListViewController () <TwilioConversationsClientDelegate, UITableViewDataSource, UITableViewDelegate, UIPopoverPresentationControllerDelegate>
 @property (nonatomic, weak) IBOutlet UITableView *tableView;
 
 @property (nonatomic, strong) UIRefreshControl *refreshControl;
@@ -34,7 +34,7 @@
                             action:@selector(refreshChannels)
                   forControlEvents:UIControlEventValueChanged];
 
-    TwilioChatClient *client = [[ChatManager sharedManager] client];
+    TwilioConversationsClient *client = [[ChatManager sharedManager] client];
     if (client) {
         client.delegate = self;
         
@@ -552,63 +552,63 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
      }];
 }
 
-#pragma mark - TwilioChatClientDelegate
+#pragma mark - TwilioConversationsClientDelegate
 
-- (void)chatClient:(TwilioChatClient *)client synchronizationStatusUpdated:(TCHClientSynchronizationStatus)status {
+- (void)chatClient:(TwilioConversationsClient *)client synchronizationStatusUpdated:(TCHClientSynchronizationStatus)status {
     if (status == TCHClientSynchronizationStatusCompleted) {
         [[ChatManager sharedManager] updateChatClient];
         [self populateChannels];
     }
 }
 
-- (void)chatClient:(TwilioChatClient *)client channelAdded:(TCHChannel *)channel {
+- (void)chatClient:(TwilioConversationsClient *)client channelAdded:(TCHChannel *)channel {
     [self.channels addObject:channel];
     [self sortChannels:self.channels];
     [self.tableView reloadData];
 }
 
-- (void)chatClient:(TwilioChatClient *)client channel:(TCHChannel *)channel updated:(TCHChannelUpdate)updated {
+- (void)chatClient:(TwilioConversationsClient *)client channel:(TCHChannel *)channel updated:(TCHChannelUpdate)updated {
     [self.tableView reloadData];
 }
 
-- (void)chatClient:(TwilioChatClient *)client channelDeleted:(TCHChannel *)channel {
+- (void)chatClient:(TwilioConversationsClient *)client channelDeleted:(TCHChannel *)channel {
     [self.channels removeObject:channel];
     [self.tableView reloadData];
 }
 
-- (void)chatClient:(TwilioChatClient *)client errorReceived:(TCHError *)error {
+- (void)chatClient:(TwilioConversationsClient *)client errorReceived:(TCHError *)error {
     [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"Error received: %@", error] inView:self.view];
 }
 
-- (void)chatClient:(TwilioChatClient *)client notificationNewMessageReceivedForChannelSid:(NSString *)channelSid messageIndex:(NSUInteger)messageIndex {
+- (void)chatClient:(TwilioConversationsClient *)client notificationNewMessageReceivedForChannelSid:(NSString *)channelSid messageIndex:(NSUInteger)messageIndex {
     [self displayNotificationForChannelSid:channelSid
                        messagePlaceholder:@"New message on channel '%@'."];
 }
 
-- (void)chatClient:(TwilioChatClient *)client notificationAddedToChannelWithSid:(NSString *)channelSid {
+- (void)chatClient:(TwilioConversationsClient *)client notificationAddedToChannelWithSid:(NSString *)channelSid {
     [self displayNotificationForChannelSid:channelSid
                        messagePlaceholder:@"You were added to channel '%@'."];
 }
 
-- (void)chatClient:(TwilioChatClient *)client notificationInvitedToChannelWithSid:(NSString *)channelSid {
+- (void)chatClient:(TwilioConversationsClient *)client notificationInvitedToChannelWithSid:(NSString *)channelSid {
     [self displayNotificationForChannelSid:channelSid
                        messagePlaceholder:@"You were invited to channel '%@'."];
 }
 
-- (void)chatClient:(TwilioChatClient *)client notificationRemovedFromChannelWithSid:(NSString *)channelSid {
+- (void)chatClient:(TwilioConversationsClient *)client notificationRemovedFromChannelWithSid:(NSString *)channelSid {
     [self displayNotificationForChannelSid:channelSid
                        messagePlaceholder:@"You were removed from channel '%@'."];
 }
 
-- (void)chatClient:(TwilioChatClient *)client notificationUpdatedBadgeCount:(NSUInteger)badgeCount {
+- (void)chatClient:(TwilioConversationsClient *)client notificationUpdatedBadgeCount:(NSUInteger)badgeCount {
     [[UIApplication sharedApplication] setApplicationIconBadgeNumber:badgeCount];
 }
 
-- (void)chatClientTokenWillExpire:(TwilioChatClient *)client {
+- (void)chatClientTokenWillExpire:(TwilioConversationsClient *)client {
     [[ChatManager sharedManager] chatClientTokenWillExpire:client];
 }
 
-- (void)chatClientTokenExpired:(TwilioChatClient *)client {
+- (void)chatClientTokenExpired:(TwilioConversationsClient *)client {
     [[ChatManager sharedManager] chatClientTokenExpired:client];
 }
 

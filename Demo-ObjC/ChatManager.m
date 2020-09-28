@@ -8,8 +8,8 @@
 #import "AppDelegate.h"
 #import "ChatManager.h"
 
-@interface ChatManager() <TwilioChatClientDelegate>
-@property (nonatomic, strong) TwilioChatClient *client;
+@interface ChatManager() <TwilioConversationsClientDelegate>
+@property (nonatomic, strong) TwilioConversationsClient *client;
 
 @property (nonatomic, strong) NSData *lastToken;
 @property (nonatomic, strong) NSDictionary *lastNotification;
@@ -68,11 +68,11 @@
                     if (success) {
                         [self storeIdentity:identity];
                         
-                        TwilioChatClientProperties *properties = [[TwilioChatClientProperties alloc] init];
-                        [TwilioChatClient chatClientWithToken:token
+                        TwilioConversationsClientProperties *properties = [[TwilioConversationsClientProperties alloc] init];
+                        [TwilioConversationsClient chatClientWithToken:token
                                                    properties:properties
                                                      delegate:self
-                                                   completion:^(TCHResult *result, TwilioChatClient *chatClient) {
+                                                   completion:^(TCHResult *result, TwilioConversationsClient *chatClient) {
                                                        if ([result isSuccessful]) {
                                                            self.client = chatClient;
                                                            
@@ -172,26 +172,26 @@
     return [[NSUserDefaults standardUserDefaults] objectForKey:@"identity"];
 }
     
-#pragma mark - TwilioChatClientDelegate temporary impl until channels list takes over
+#pragma mark - TwilioConversationsClientDelegate temporary impl until channels list takes over
 
 // Can occur before we transfer the delegate to the channels list VC
-- (void)chatClient:(TwilioChatClient *)client notificationUpdatedBadgeCount:(NSUInteger)badgeCount {
+- (void)chatClient:(TwilioConversationsClient *)client notificationUpdatedBadgeCount:(NSUInteger)badgeCount {
     [[UIApplication sharedApplication] setApplicationIconBadgeNumber:badgeCount];
 }
 
-- (void)chatClient:(TwilioChatClient *)client errorReceived:(TCHError *)error {
+- (void)chatClient:(TwilioConversationsClient *)client errorReceived:(TCHError *)error {
     NSLog(@"error received: %@", error);
 }
     
-- (void)chatClientTokenWillExpire:(TwilioChatClient *)client {
+- (void)chatClientTokenWillExpire:(TwilioConversationsClient *)client {
     [self renewTokenForClient:client];
 }
 
-- (void)chatClientTokenExpired:(TwilioChatClient *)client {
+- (void)chatClientTokenExpired:(TwilioConversationsClient *)client {
     [self renewTokenForClient:client];
 }
 
-- (void)renewTokenForClient:(TwilioChatClient *)client {
+- (void)renewTokenForClient:(TwilioConversationsClient *)client {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
         [self tokenForIdentity:[self identity] completion:^(BOOL success, NSString *token) {
             if (success) {

@@ -11,7 +11,7 @@
 
 @interface ChatManager : NSObject
 
-@property (nonatomic, strong, readonly) TwilioChatClient *client;
+@property (nonatomic, strong, readonly) TwilioConversationsClient *client;
 
 + (instancetype)sharedManager;
 
@@ -27,7 +27,7 @@
 
 - (NSString *)identity;
 
-- (void)chatClientTokenWillExpire:(TwilioChatClient *)client;
-- (void)chatClientTokenExpired:(TwilioChatClient *)client;
+- (void)chatClientTokenWillExpire:(TwilioConversationsClient *)client;
+- (void)chatClientTokenExpired:(TwilioConversationsClient *)client;
 
 @end
