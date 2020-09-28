@@ -331,9 +331,9 @@
 }
 
 - (void)setNoMessagesConsumed:(TCHChannel *)channel {
-    [channel.messages setNoMessagesConsumedWithCompletion:^(TCHResult * _Nonnull result, NSUInteger count) {
+    [channel.messages setNoMessagesConsumedWithCompletion:^(TCHResult * _Nonnull result, NSNumber *number) {
         if (result.isSuccessful) {
-            NSLog(@"@@@@@ %s new unconsumed count: %lu", __FUNCTION__, (unsigned long)count);
+            NSLog(@"@@@@@ %s new unconsumed count: %lu", __FUNCTION__, (unsigned long)number.integerValue);
         } else {
             NSLog(@"@@@@@ %s consumption update failed: %@", __FUNCTION__, result);
         }
