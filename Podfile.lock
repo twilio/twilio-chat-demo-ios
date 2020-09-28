@@ -1,16 +1,16 @@
 PODS:
-  - TwilioChatClient (4.0.0)
+  - TwilioConversationsClient (1.0.0)
 
 DEPENDENCIES:
-  - TwilioChatClient (~> 4)
+  - TwilioConversationsClient (~> 1)
 
 SPEC REPOS:
   trunk:
-    - TwilioChatClient
+    - TwilioConversationsClient
 
 SPEC CHECKSUMS:
-  TwilioChatClient: 72fad6bd1fcff3bb13d90a5a5c873509072d859a
+  TwilioConversationsClient: 813c4cb9b4f7ce7dfe3beb4bb37ae388d3ffb596
 
-PODFILE CHECKSUM: d71a01ad429b3ba94bd4a539db5769485e87664a
+PODFILE CHECKSUM: 270e0b08d782d0f024d74805c2bddea887c7fb72
 
 COCOAPODS: 1.10.0.rc.1
