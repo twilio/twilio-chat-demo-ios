@@ -7,8 +7,8 @@
 
 #import <UIKit/UIKit.h>
 
-#import <TwilioChatClient/TwilioChatClient.h>
-#import <TwilioChatClient/TCHUser.h>
+#import <TwilioConversationsClient/TwilioConversationsClient.h>
+#import <TwilioConversationsClient/TCHUser.h>
 
 /** A collection of helper methods used by the Twilio Programmable Chat demo application. */
 @interface DemoHelpers : NSObject

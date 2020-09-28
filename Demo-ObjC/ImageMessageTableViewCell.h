@@ -6,7 +6,7 @@
 //
 
 #import <UIKit/UIKit.h>
-#import <TwilioChatClient/TwilioChatClient.h>
+#import <TwilioConversationsClient/TwilioConversationsClient.h>
 
 #import "MessageTableViewCell.h"
 

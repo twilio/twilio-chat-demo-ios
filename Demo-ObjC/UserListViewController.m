@@ -6,7 +6,7 @@
 //  Copyright (c) 2018 Twilio, Inc. All rights reserved.
 //
 
-#import <TwilioChatClient/TCHMember.h>
+#import <TwilioConversationsClient/TCHMember.h>
 
 #import "UserListViewController.h"
 #import "DemoHelpers.h"
