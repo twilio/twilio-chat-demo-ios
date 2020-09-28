@@ -133,7 +133,7 @@
  @param completion The completion block which will receive the response.
  */
 + (void)unconsumedMessagesForChannel:(nonnull TCHChannel *)channel
-                          completion:(nonnull TCHCountCompletion)completion;
+                          completion:(nonnull TCHNullableCountCompletion)completion;
 
 /** Load image from cache, if it exists locally.
  
