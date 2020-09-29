@@ -92,7 +92,7 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
 
 - (void)refreshSeenBy {
     NSMutableDictionary<NSNumber *, NSMutableArray<TCHParticipant *> *> *seenBy = [NSMutableDictionary dictionary];
-    for (TCHParticipant *member in self.channel.members.membersList) {
+    for (TCHParticipant *member in self.channel.participants) {
         if ([self isMe:member]) {
             continue;
         }
@@ -843,17 +843,18 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
             return;
         }
         
-        [self.channel.members addByIdentity:newValue
-                                 completion:^(TCHResult *result) {
-                                     if (result.isSuccessful) {
-                                         [DemoHelpers displayToastWithMessage:@"User added."
-                                                                       inView:weakSelf.view];
-                                     } else {
-                                         [DemoHelpers displayToastWithMessage:@"User could not be added."
-                                                                       inView:weakSelf.view];
-                                         NSLog(@"%s: %@", __FUNCTION__, result.error);
-                                     }
-                                 }];
+        [self.channel addParticipantByIdentity:newValue
+                                    attributes:nil
+                                    completion:^(TCHResult *result) {
+            if (result.isSuccessful) {
+                [DemoHelpers displayToastWithMessage:@"User added."
+                                              inView:weakSelf.view];
+            } else {
+                [DemoHelpers displayToastWithMessage:@"User could not be added."
+                                              inView:weakSelf.view];
+                NSLog(@"%s: %@", __FUNCTION__, result.error);
+            }
+        }];
     };
     
     [self promptUserWithTitle:title
@@ -882,7 +883,8 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
             return;
         }
         
-        [self.channel.members removeMember:member completion:^(TCHResult * _Nonnull result) {
+        [self.channel removeParticipant:member
+                             completion:^(TCHResult * _Nonnull result) {
             if (result.isSuccessful) {
                 [DemoHelpers displayToastWithMessage:@"User removed."
                                               inView:weakSelf.view];
@@ -902,7 +904,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (void)listMembers {
-    [self displayUsersList:self.channel.members.membersList caption:@"Channel Members"];
+    [self displayUsersList:self.channel.participants caption:@"Channel Members"];
 }
 
 - (void)leaveChannel {
