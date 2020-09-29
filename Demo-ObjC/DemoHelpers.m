@@ -216,7 +216,7 @@
     }
     
     if (channel.lastReadMessageIndex) { // if the user has consumed any messages, the count is good as-is
-        [channel getUnconsumedMessagesCountWithCompletion:completion];
+        [channel getUnreadMessagesCountWithCompletion:completion];
     } else { // otherwise display total message count for the channel
         [channel getMessagesCountWithCompletion:^(TCHResult *result, NSUInteger count) {
             completion(result, @(count));

@@ -96,7 +96,7 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
         if ([self isMe:member]) {
             continue;
         }
-        NSNumber *index = member.lastConsumedMessageIndex;
+        NSNumber *index = member.lastReadMessageIndex;
         if (!index) {
             return;
         }
