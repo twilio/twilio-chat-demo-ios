@@ -119,33 +119,32 @@
                                                          style:UIAlertActionStyleDefault
                                                        handler:
                                  ^(UIAlertAction *action) {
-                                     UITextField *newChannelNameTextField = newChannelDialog.textFields[0];
+        UITextField *newChannelNameTextField = newChannelDialog.textFields[0];
 
-                                     NSMutableDictionary *options = [NSMutableDictionary dictionary];
-                                     if (newChannelNameTextField &&
-                                         newChannelNameTextField.text &&
-                                         ![newChannelNameTextField.text isEqualToString:@""]) {
-                                         options[TCHConversationOptionFriendlyName] = newChannelNameTextField.text;
-                                     }
-                                     if (isPrivate) {
-                                         options[TCHConversationOptionType] = @(TCHConversationTypePrivate);
-                                     }
-                                     
-                                     TCHConversations *channelsList = [[[ChatManager sharedManager] client] channelsList];
-                                     [channelsList createChannelWithOptions:options
-                                                                      completion:^(TCHResult *result, TCHConversation *channel) {
-                                                                          if (result.isSuccessful) {
-                                                                              [DemoHelpers displayToastWithMessage:@"Channel Created"
-                                                                                                            inView:self.view];
-                                                                              
-                                                                              [self joinChannel:channel];
-                                                                          } else {
-                                                                              [DemoHelpers displayToastWithMessage:@"Channel Create Failed"
-                                                                                                            inView:self.view];
-                                                                              NSLog(@"%s: %@", __FUNCTION__, result.error);
-                                                                          }
-                                                                      }];
-                                 }]];
+        NSMutableDictionary *options = [NSMutableDictionary dictionary];
+        if (newChannelNameTextField &&
+            newChannelNameTextField.text &&
+            ![newChannelNameTextField.text isEqualToString:@""]) {
+            options[TCHConversationOptionFriendlyName] = newChannelNameTextField.text;
+        }
+        if (isPrivate) {
+            options[TCHConversationOptionType] = @(TCHConversationTypePrivate);
+        }
+
+        [ChatManager.sharedManager.client createConversationWithOptions:options
+                                                             completion:^(TCHResult *result, TCHConversation *channel) {
+            if (result.isSuccessful) {
+                [DemoHelpers displayToastWithMessage:@"Channel Created"
+                                              inView:self.view];
+
+                [self joinChannel:channel];
+            } else {
+                [DemoHelpers displayToastWithMessage:@"Channel Create Failed"
+                                              inView:self.view];
+                NSLog(@"%s: %@", __FUNCTION__, result.error);
+            }
+        }];
+    }]];
     
     [newChannelDialog addAction:[UIAlertAction actionWithTitle:@"Cancel"
                                                          style:UIAlertActionStyleCancel
@@ -169,20 +168,19 @@
                                                           style:UIAlertActionStyleDefault
                                                         handler:
                                   ^(UIAlertAction *action) {
-                                      UITextField *channelUniqueNameTextField = joinChannelDialog.textFields[0];
-                                      
-                                      TCHConversations *channelsList = [[[ChatManager sharedManager] client] channelsList];
-                                      [channelsList channelWithSidOrUniqueName:channelUniqueNameTextField.text
-                                                                    completion:^(TCHResult *result, TCHConversation *channel) {
-                                                                        if (result.isSuccessful) {
-                                                                            [self joinChannel:channel];
-                                                                        } else {
-                                                                            [DemoHelpers displayToastWithMessage:@"Channel Join Failed"
-                                                                                                          inView:self.view];
-                                                                            NSLog(@"%s: %@", __FUNCTION__, result.error);
-                                                                        }
-                                                                    }];
-                                  }]];
+        UITextField *channelUniqueNameTextField = joinChannelDialog.textFields[0];
+
+        [ChatManager.sharedManager.client conversationWithSidOrUniqueName:channelUniqueNameTextField.text
+                                                               completion:^(TCHResult *result, TCHConversation *channel) {
+            if (result.isSuccessful) {
+                [self joinChannel:channel];
+            } else {
+                [DemoHelpers displayToastWithMessage:@"Channel Join Failed"
+                                              inView:self.view];
+                NSLog(@"%s: %@", __FUNCTION__, result.error);
+            }
+        }];
+    }]];
     
     [joinChannelDialog addAction:[UIAlertAction actionWithTitle:@"Cancel"
                                                           style:UIAlertActionStyleCancel
@@ -308,9 +306,8 @@
     self.channels = nil;
     [self.tableView reloadData];
 
-    TCHConversations *channelsList = [[[ChatManager sharedManager] client] channelsList];
     NSMutableOrderedSet<TCHConversation *> *newChannels = [[NSMutableOrderedSet alloc] init];
-    [newChannels addObjectsFromArray:[channelsList subscribedChannels]];
+    [newChannels addObjectsFromArray:[ChatManager.sharedManager.client myConversations]];
     [self sortChannels:newChannels];
     dispatch_async(dispatch_get_main_queue(), ^{
         self.channels = newChannels;
@@ -541,8 +538,8 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 
 - (void)displayNotificationForChannelSid:(NSString *)channelSid
                      messagePlaceholder:(NSString *)messagePlaceholder {
-    [[[[ChatManager sharedManager] client] channelsList] channelWithSidOrUniqueName:channelSid
-                                                                         completion:
+    [ChatManager.sharedManager.client conversationWithSidOrUniqueName:channelSid
+                                                           completion:
      ^(TCHResult *result, TCHConversation *channel) {
          if (result.isSuccessful) {
              [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:messagePlaceholder, channel.friendlyName] inView:self.view];
