@@ -10,7 +10,6 @@
 #import "ChannelViewController.h"
 #import "ChatManager.h"
 #import "DemoHelpers.h"
-#import "PublicChannelListViewController.h"
 
 @interface ChannelListViewController () <TwilioConversationsClientDelegate, UITableViewDataSource, UITableViewDelegate, UIPopoverPresentationControllerDelegate>
 @property (nonatomic, weak) IBOutlet UITableView *tableView;
@@ -73,28 +72,16 @@
                                                                             preferredStyle:UIAlertControllerStyleActionSheet];
     [self configurePopoverPresentationController:newChannelActionSheet.popoverPresentationController];
 
-    [newChannelActionSheet addAction:[UIAlertAction actionWithTitle:@"Create Public Channel"
+    [newChannelActionSheet addAction:[UIAlertAction actionWithTitle:@"Create Channel"
                                                               style:UIAlertActionStyleDefault
                                                             handler:^(UIAlertAction *action) {
-                                                                [self newChannelPrivate:NO];
-                                                            }]];
-    
-    [newChannelActionSheet addAction:[UIAlertAction actionWithTitle:@"Create Private Channel"
-                                                              style:UIAlertActionStyleDefault
-                                                            handler:^(UIAlertAction *action) {
-                                                                [self newChannelPrivate:YES];
+                                                                [self newChannel];
                                                             }]];
 
     [newChannelActionSheet addAction:[UIAlertAction actionWithTitle:@"Join Channel by Unique Name"
                                                               style:UIAlertActionStyleDefault
                                                             handler:^(UIAlertAction *action) {
                                                                 [self joinChannelByUniqueName];
-                                                            }]];
-    
-    [newChannelActionSheet addAction:[UIAlertAction actionWithTitle:@"Join Public Channel"
-                                                              style:UIAlertActionStyleDefault
-                                                            handler:^(UIAlertAction *action) {
-                                                                [self browsePublicChannels];
                                                             }]];
     
     [newChannelActionSheet addAction:[UIAlertAction actionWithTitle:@"Cancel"
@@ -106,7 +93,7 @@
                      completion:nil];
 }
 
-- (void)newChannelPrivate:(BOOL)isPrivate {
+- (void)newChannel {
     UIAlertController *newChannelDialog = [UIAlertController alertControllerWithTitle:@"New Channel"
                                                                               message:@"What would you like to call the new channel?"
                                                                        preferredStyle:UIAlertControllerStyleAlert];
@@ -126,9 +113,6 @@
             newChannelNameTextField.text &&
             ![newChannelNameTextField.text isEqualToString:@""]) {
             options[TCHConversationOptionFriendlyName] = newChannelNameTextField.text;
-        }
-        if (isPrivate) {
-            options[TCHConversationOptionType] = @(TCHConversationTypePrivate);
         }
 
         [ChatManager.sharedManager.client createConversationWithOptions:options
@@ -189,49 +173,6 @@
     [self presentViewController:joinChannelDialog
                        animated:YES
                      completion:nil];
-}
-
-- (void)browsePublicChannels {
-    TCHConversations *channelsList = [[[ChatManager sharedManager] client] channelsList];
-
-    void __block (^_completion)(TCHResult *result, TCHConversationDescriptorPaginator *paginator);
-    TCHConversationDescriptorPaginatorCompletion completion = ^(TCHResult *result, TCHConversationDescriptorPaginator *paginator) {
-        if (result.isSuccessful) {
-            [self.view endEditing:YES];
-            
-            UINavigationController *navigationController = [self.storyboard instantiateViewControllerWithIdentifier:@"publicChannelsList"];
-            navigationController.modalPresentationStyle = UIModalPresentationPopover;
-            navigationController.preferredContentSize = CGSizeMake(
-                                                                   self.tableView.frame.size.width * 1.0,
-                                                                   self.tableView.frame.size.height * 0.70
-                                                                   );
-            
-            UIPopoverPresentationController *popoverController = navigationController.popoverPresentationController;
-            popoverController.delegate = self;
-            popoverController.sourceView = self.view;
-            popoverController.sourceRect = (CGRect){
-                .origin = self.tableView.center,
-                .size = CGSizeZero
-            };
-            popoverController.permittedArrowDirections = 0;
-            navigationController.navigationBarHidden = YES;
-            
-            PublicChannelListViewController *publicChannelListController = (PublicChannelListViewController *)navigationController.topViewController;
-            publicChannelListController.paginator = paginator;
-            [self presentViewController:navigationController
-                               animated:YES
-                             completion:^{
-                                 
-                             }];
-        } else {
-            [DemoHelpers displayToastWithMessage:@"Failed to get list of public channels."
-                                          inView:self.view];
-            NSLog(@"%s: %@", __FUNCTION__, result.error);
-        }
-    };
-    _completion = completion;
-    
-    [channelsList publicChannelDescriptorsWithCompletion:completion];
 }
 
 - (void)displayOperationsForChannel:(TCHConversation *)channel
@@ -418,10 +359,6 @@
         if (channel.friendlyName.length == 0) {
             nameLabel = @"(no friendly name)";
         }
-        if (channel.type == TCHConversationTypePrivate) {
-            nameLabel = [nameLabel stringByAppendingString:@" (private)"];
-        }
-        
         channelCell.nameLabel.text = nameLabel;
         channelCell.sidLabel.text = channel.sid;
 
