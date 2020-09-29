@@ -248,12 +248,6 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
                                                        [weakSelf listMembers];
                                                    }]];
 
-    [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Invite Member"
-                                                     style:UIAlertActionStyleDefault
-                                                   handler:^(UIAlertAction *action) {
-                                                       [weakSelf inviteMember];
-                                                   }]];
-
     [actionsSheet addAction:[UIAlertAction actionWithTitle:@"Add Member"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction *action) {
@@ -797,38 +791,6 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     [self presentViewController:actionsSheet
                        animated:YES
                      completion:nil];
-}
-
-- (void)inviteMember {
-    NSString *title = @"Invite";
-    NSString *placeholder = @"User To Invite";
-    NSString *initialValue = @"";
-    NSString *actionTitle = @"Invite";
-    
-    __weak __typeof(self) weakSelf = self;
-    void (^action)(NSString *) = ^void(NSString *newValue) {
-        if (!newValue || newValue.length == 0) {
-            return;
-        }
-        
-        [self.channel.members inviteByIdentity:newValue
-                                    completion:^(TCHResult *result) {
-                                        if (result.isSuccessful) {
-                                            [DemoHelpers displayToastWithMessage:@"User invited."
-                                                                          inView:weakSelf.view];
-                                        } else {
-                                            [DemoHelpers displayToastWithMessage:@"User could not be invited."
-                                                                          inView:weakSelf.view];
-                                            NSLog(@"%s: %@", __FUNCTION__, result.error);
-                                        }
-                                    }];
-    };
-    
-    [self promptUserWithTitle:title
-                  placeholder:placeholder
-                 initialValue:initialValue
-                  actionTitle:actionTitle
-                       action:action];
 }
 
 - (void)addMember {

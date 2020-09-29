@@ -201,22 +201,6 @@
                                                              [weakSelf leaveChannel:channel];
                                                          }]];
     }
-    
-    if (channel.status == TCHConversationStatusInvited) {
-        [channelActions addAction:[UIAlertAction actionWithTitle:@"Decline Invite"
-                                                           style:UIAlertActionStyleDefault
-                                                         handler:^(UIAlertAction *action) {
-                                                             [weakSelf declineInviteOnChannel:channel];
-                                                         }]];
-    }
-    
-    if (channel.status == TCHConversationStatusInvited || channel.status == TCHConversationStatusNotParticipating) {
-        [channelActions addAction:[UIAlertAction actionWithTitle:@"Join"
-                                                           style:UIAlertActionStyleDefault
-                                                         handler:^(UIAlertAction *action) {
-                                                             [weakSelf joinChannel:channel];
-                                                         }]];
-    }
 
     if (!calledFromSwipe) {
         [channelActions addAction:[UIAlertAction actionWithTitle:@"Destroy"
@@ -321,20 +305,6 @@
     }];
 }
 
-- (void)declineInviteOnChannel:(TCHConversation *)channel {
-    [channel declineInvitationWithCompletion:^(TCHResult *result) {
-        if (result.isSuccessful) {
-            [DemoHelpers displayToastWithMessage:@"Invite declined."
-                                          inView:self.view];
-        } else {
-            [DemoHelpers displayToastWithMessage:@"Invite declined failed."
-                                          inView:self.view];
-            NSLog(@"%s: %@", __FUNCTION__, result.error);
-        }
-        [self.tableView reloadData];
-    }];
-}
-
 #pragma mark - UITableViewDataSource methods
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
@@ -364,17 +334,10 @@
 
         UIColor *channelColor = nil;
         switch (channel.status) {
-            case TCHConversationStatusInvited:
-                channelColor = UIColor.systemBlueColor;
-                break;
             case TCHConversationStatusJoined:
                 channelColor = UIColor.systemGreenColor;
                 break;
             case TCHConversationStatusNotParticipating:
-                channelColor = UIColor.systemGrayColor;
-                break;
-            case TCHConversationStatusUnknown:
-                // Will not happen for synchronized channels
                 channelColor = UIColor.systemGrayColor;
                 break;
         }
@@ -522,11 +485,6 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 - (void)chatClient:(TwilioConversationsClient *)client notificationAddedToChannelWithSid:(NSString *)channelSid {
     [self displayNotificationForChannelSid:channelSid
                        messagePlaceholder:@"You were added to channel '%@'."];
-}
-
-- (void)chatClient:(TwilioConversationsClient *)client notificationInvitedToChannelWithSid:(NSString *)channelSid {
-    [self displayNotificationForChannelSid:channelSid
-                       messagePlaceholder:@"You were invited to channel '%@'."];
 }
 
 - (void)chatClient:(TwilioConversationsClient *)client notificationRemovedFromChannelWithSid:(NSString *)channelSid {
