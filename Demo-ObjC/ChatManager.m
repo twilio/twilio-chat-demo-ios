@@ -69,10 +69,10 @@
                         [self storeIdentity:identity];
                         
                         TwilioConversationsClientProperties *properties = [[TwilioConversationsClientProperties alloc] init];
-                        [TwilioConversationsClient chatClientWithToken:token
-                                                   properties:properties
-                                                     delegate:self
-                                                   completion:^(TCHResult *result, TwilioConversationsClient *chatClient) {
+                        [TwilioConversationsClient conversationsClientWithToken:token
+                                                                     properties:properties
+                                                                       delegate:self
+                                                                     completion:^(TCHResult *result, TwilioConversationsClient *chatClient) {
                                                        if ([result isSuccessful]) {
                                                            self.client = chatClient;
                                                            
