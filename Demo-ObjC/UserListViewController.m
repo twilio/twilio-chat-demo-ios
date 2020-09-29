@@ -6,7 +6,7 @@
 //  Copyright (c) 2018 Twilio, Inc. All rights reserved.
 //
 
-#import <TwilioConversationsClient/TCHMember.h>
+#import <TwilioConversationsClient/TCHParticipant.h>
 
 #import "UserListViewController.h"
 #import "DemoHelpers.h"
@@ -73,8 +73,8 @@
     
     id user = self.users[indexPath.row];
     
-    if ([user isKindOfClass:[TCHMember class]]) {
-        TCHMember *member = user;
+    if ([user isKindOfClass:[TCHParticipant class]]) {
+        TCHParticipant *member = user;
         [[[[ChatManager sharedManager] client] users] subscribedUserWithIdentity:member.identity
                                                                       completion:^(TCHResult *result, TCHUser *user) {
             cell.textLabel.text = [NSString stringWithFormat:@"%@", [DemoHelpers displayNameForUser:user]];

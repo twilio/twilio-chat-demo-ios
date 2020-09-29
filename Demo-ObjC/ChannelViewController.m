@@ -40,7 +40,7 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
 @property (nonatomic, strong) NSMutableArray<id> *channelData;
 @property (nonatomic, strong) NSMutableArray *typingUsers;
 @property (nonatomic, copy) NSNumber *userConsumedIndex;
-@property (nonatomic, strong) NSDictionary<NSNumber *, NSArray<TCHMember *> *> *seenBy;
+@property (nonatomic, strong) NSDictionary<NSNumber *, NSArray<TCHParticipant *> *> *seenBy;
 
 @property (nonatomic, strong) NSMutableDictionary<NSIndexPath *, NSNumber *> *cachedHeights;
 @end
@@ -91,8 +91,8 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
 }
 
 - (void)refreshSeenBy {
-    NSMutableDictionary<NSNumber *, NSMutableArray<TCHMember *> *> *seenBy = [NSMutableDictionary dictionary];
-    for (TCHMember *member in self.channel.members.membersList) {
+    NSMutableDictionary<NSNumber *, NSMutableArray<TCHParticipant *> *> *seenBy = [NSMutableDictionary dictionary];
+    for (TCHParticipant *member in self.channel.members.membersList) {
         if ([self isMe:member]) {
             continue;
         }
@@ -310,7 +310,7 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
                       }];
 }
 
-- (void)pluralizeListOfMembers:(NSArray<TCHMember *> *)members completion:(void (^)(NSString *result))completion {
+- (void)pluralizeListOfMembers:(NSArray<TCHParticipant *> *)members completion:(void (^)(NSString *result))completion {
     if (!members || [members count] == 0) {
         completion(@"");
     }
@@ -319,7 +319,7 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
     
     dispatch_group_t userGroup = dispatch_group_create();
     
-    for (TCHMember *member in members) {
+    for (TCHParticipant *member in members) {
         dispatch_group_enter(userGroup);
         [[[[ChatManager sharedManager] client] users] subscribedUserWithIdentity:member.identity completion:^(TCHResult *result, TCHUser *user) {
             if (result.isSuccessful) {
@@ -874,7 +874,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
             return;
         }
         
-        TCHMember *member = [self.channel memberWithIdentity:newValue];
+        TCHParticipant *member = [self.channel memberWithIdentity:newValue];
         if (!member) {
             [DemoHelpers displayToastWithMessage:@"User not found on this channel."
                                           inView:weakSelf.view];
@@ -1127,7 +1127,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     return nil;
 }
 
-- (BOOL)isMe:(TCHMember *)member {
+- (BOOL)isMe:(TCHParticipant *)member {
     return ([[member identity] isEqualToString:[[[[ChatManager sharedManager] client] user] identity]]);
 }
 
@@ -1197,7 +1197,7 @@ synchronizationStatusUpdated:(TCHConversationSynchronizationStatus)status {
     
 - (void)chatClient:(TwilioConversationsClient *)client
            channel:(TCHConversation *)channel
-      memberJoined:(TCHMember *)member {
+      memberJoined:(TCHParticipant *)member {
     [[[[ChatManager sharedManager] client] users] subscribedUserWithIdentity:member.identity
                                                                   completion:^(TCHResult *result, TCHUser *user) {
                                                                       if (result.isSuccessful) {
@@ -1209,14 +1209,14 @@ synchronizationStatusUpdated:(TCHConversationSynchronizationStatus)status {
     
 - (void)chatClient:(TwilioConversationsClient *)client
            channel:(TCHConversation *)channel
-            member:(TCHMember *)member
-           updated:(TCHMemberUpdate)updated {
+            member:(TCHParticipant *)member
+           updated:(TCHParticipantUpdate)updated {
     [self refreshSeenBy];
 }
     
 - (void)chatClient:(TwilioConversationsClient *)client
            channel:(TCHConversation *)channel
-            member:(TCHMember *)member
+            member:(TCHParticipant *)member
               user:(TCHUser *)user
            updated:(TCHUserUpdate)updated {
     if (updated == TCHUserUpdateFriendlyName) {
@@ -1237,7 +1237,7 @@ synchronizationStatusUpdated:(TCHConversationSynchronizationStatus)status {
 
 - (void)chatClient:(TwilioConversationsClient *)client
            channel:(TCHConversation *)channel
-        memberLeft:(TCHMember *)member {
+        memberLeft:(TCHParticipant *)member {
     [[[[ChatManager sharedManager] client] users] subscribedUserWithIdentity:member.identity
                                                                   completion:^(TCHResult *result, TCHUser *user) {
                                                                       if (result.isSuccessful) {
@@ -1269,7 +1269,7 @@ synchronizationStatusUpdated:(TCHConversationSynchronizationStatus)status {
     
 - (void)chatClient:(TwilioConversationsClient *)client
 typingStartedOnChannel:(TCHConversation *)channel
-            member:(TCHMember *)member {
+            member:(TCHParticipant *)member {
     [self.typingUsers addObject:member];
     [self rebuildData];
     if ([self isNearBottom]) {
@@ -1279,7 +1279,7 @@ typingStartedOnChannel:(TCHConversation *)channel
     
 - (void)chatClient:(TwilioConversationsClient *)client
 typingEndedOnChannel:(TCHConversation *)channel
-            member:(TCHMember *)member {
+            member:(TCHParticipant *)member {
     [self.typingUsers removeObject:member];
     [self rebuildData];
     if ([self isNearBottom]) {
@@ -1334,7 +1334,7 @@ typingEndedOnChannel:(TCHConversation *)channel
 - (NSArray *)membersListFromIdentities:(NSArray *)identities {
     NSMutableArray *ret = [NSMutableArray array];
     for (NSString *identity in identities) {
-        TCHMember *member = [self.channel memberWithIdentity:identity];
+        TCHParticipant *member = [self.channel memberWithIdentity:identity];
         if (member) {
             [ret addObject:member];
         } else {
