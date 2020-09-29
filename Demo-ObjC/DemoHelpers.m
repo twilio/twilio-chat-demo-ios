@@ -269,49 +269,27 @@
 
             NSString *finalFilename = [self mediaFilenameForMessage:message];
             
-            NSString *tempFilename = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"%@_%@", [[NSProcessInfo processInfo] globallyUniqueString], [finalFilename lastPathComponent]]];
-            
-            NSOutputStream *outputStream = [NSOutputStream outputStreamToFileAtPath:tempFilename append:NO];
-            [message getMediaWithOutputStream:outputStream
-                                    onStarted:^{
-                                        progressUpdate(0.0);
-                                    } onProgress:^(NSUInteger bytes) {
-                                        progressUpdate((CGFloat)bytes / (CGFloat)message.mediaSize);
-                                    } onCompleted:^(NSString * _Nonnull mediaSid) {
-                                        progressUpdate(1.0);
-                                    } completion:^(TCHResult * _Nonnull result) {
-                                        dispatch_queue_t thisQueue = queue; // keep queue alive until we're done
-                                        if (result.isSuccessful) {
-                                            if (![[NSFileManager defaultManager] fileExistsAtPath:finalFilename]) {
-                                                NSError *error = nil;
-                                                [[NSFileManager defaultManager] moveItemAtPath:tempFilename
-                                                                                        toPath:finalFilename
-                                                                                         error:&error];
-                                                
-                                                if (error) {
-                                                    NSLog(@"Error renaming final file to %@ - %@", finalFilename, error);
-                                                }
-                                            }
-                                            dispatch_async(dispatch_get_main_queue(), ^{
-                                                completion([UIImage imageWithContentsOfFile:finalFilename]);
-                                            });
-                                        } else {
-                                            NSLog(@"Download failed, cleaning up file: %@", result.error);
-                                            NSError *deleteError = nil;
-                                            [[NSFileManager defaultManager] removeItemAtPath:tempFilename
-                                                                                       error:&deleteError];
-                                            if (deleteError) {
-                                                NSLog(@"Unable to delete failed download");
-                                            }
-                                            
-                                            dispatch_async(dispatch_get_main_queue(), ^{
-                                                completion(nil);
-                                            });
-                                        }
-                                        thisQueue = nil;
-                                        dispatch_semaphore_signal(semaphore);
-                                    }];
-            
+            [message getMediaContentTemporaryUrlWithCompletion:^(TCHResult *result, NSString *value) {
+                if (!result.isSuccessful) {
+                    NSLog(@"Download failed");
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        completion(nil);
+                    });
+                    dispatch_semaphore_signal(semaphore);
+                    return;
+                }
+
+                NSURL *downloadULR = [NSURL URLWithString:value];
+                NSData *image = [NSData dataWithContentsOfURL:downloadULR];
+                if (image) {
+                    [image writeToFile:finalFilename atomically:NO];
+                    completion([UIImage imageWithData:image]);
+                } else {
+                    completion(nil);
+                }
+
+                dispatch_semaphore_signal(semaphore);
+            }];
             dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 5 * 60 * NSEC_PER_SEC));
         });
     });
