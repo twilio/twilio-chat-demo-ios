@@ -75,8 +75,8 @@
     
     if ([user isKindOfClass:[TCHParticipant class]]) {
         TCHParticipant *member = user;
-        [[[[ChatManager sharedManager] client] users] subscribedUserWithIdentity:member.identity
-                                                                      completion:^(TCHResult *result, TCHUser *user) {
+        [ChatManager.sharedManager.client subscribedUserWithIdentity:member.identity
+                                                          completion:^(TCHResult *result, TCHUser *user) {
             cell.textLabel.text = [NSString stringWithFormat:@"%@", [DemoHelpers displayNameForUser:user]];
             cell.imageView.image = [DemoHelpers avatarForUser:user size:44.0 scalingFactor:2.0];
 

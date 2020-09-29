@@ -235,8 +235,8 @@
     
     TCHParticipant *author = [[self channel] memberWithIdentity:[self message].author];
     if (author) {
-        [[[[ChatManager sharedManager] client] users] subscribedUserWithIdentity:author.identity
-                                                                      completion:^(TCHResult *result, TCHUser *user) {
+        [ChatManager.sharedManager.client subscribedUserWithIdentity:author.identity
+                                                          completion:^(TCHResult *result, TCHUser *user) {
                                                                           if (result.isSuccessful) {
                                                                               self.authorLabel.text = [DemoHelpers displayNameForUser:user];
                                                                               self.avatarImage.image = [DemoHelpers avatarForUser:user size:44.0 scalingFactor:2.0];

@@ -321,7 +321,8 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
     
     for (TCHParticipant *member in members) {
         dispatch_group_enter(userGroup);
-        [[[[ChatManager sharedManager] client] users] subscribedUserWithIdentity:member.identity completion:^(TCHResult *result, TCHUser *user) {
+        [ChatManager.sharedManager.client subscribedUserWithIdentity:member.identity
+                                                          completion:^(TCHResult *result, TCHUser *user) {
             if (result.isSuccessful) {
                 [memberDisplayNames addObject:[DemoHelpers displayNameForUser:user]];
             }
@@ -1198,8 +1199,8 @@ synchronizationStatusUpdated:(TCHConversationSynchronizationStatus)status {
 - (void)chatClient:(TwilioConversationsClient *)client
            channel:(TCHConversation *)channel
       memberJoined:(TCHParticipant *)member {
-    [[[[ChatManager sharedManager] client] users] subscribedUserWithIdentity:member.identity
-                                                                  completion:^(TCHResult *result, TCHUser *user) {
+    [ChatManager.sharedManager.client subscribedUserWithIdentity:member.identity
+                                                      completion:^(TCHResult *result, TCHUser *user) {
                                                                       if (result.isSuccessful) {
                                                                           [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ joined the channel.", [DemoHelpers displayNameForUser:user]]
                                                                                                         inView:self.view];
@@ -1238,8 +1239,8 @@ synchronizationStatusUpdated:(TCHConversationSynchronizationStatus)status {
 - (void)chatClient:(TwilioConversationsClient *)client
            channel:(TCHConversation *)channel
         memberLeft:(TCHParticipant *)member {
-    [[[[ChatManager sharedManager] client] users] subscribedUserWithIdentity:member.identity
-                                                                  completion:^(TCHResult *result, TCHUser *user) {
+    [ChatManager.sharedManager.client subscribedUserWithIdentity:member.identity
+                                                      completion:^(TCHResult *result, TCHUser *user) {
                                                                       if (result.isSuccessful) {
                                                                           [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:@"%@ left the channel.", [DemoHelpers displayNameForUser:user]]
                                                                                                         inView:self.view];
