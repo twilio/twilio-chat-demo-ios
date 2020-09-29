@@ -128,7 +128,7 @@
         return;
     }
     
-    TCHParticipant *author = [[self channel] memberWithIdentity:[self message].author];
+    TCHParticipant *author = [self.channel participantWithIdentity:self.message.author];
     if (author) {
         [ChatManager.sharedManager.client subscribedUserWithIdentity:author.identity
                                                           completion:^(TCHResult *result, TCHUser *user) {

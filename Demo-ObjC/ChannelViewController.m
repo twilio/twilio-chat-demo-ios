@@ -838,7 +838,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
             return;
         }
         
-        TCHParticipant *member = [self.channel memberWithIdentity:newValue];
+        TCHParticipant *member = [self.channel participantWithIdentity:newValue];
         if (!member) {
             [DemoHelpers displayToastWithMessage:@"User not found on this channel."
                                           inView:weakSelf.view];
@@ -1299,7 +1299,7 @@ typingEndedOnChannel:(TCHConversation *)channel
 - (NSArray *)membersListFromIdentities:(NSArray *)identities {
     NSMutableArray *ret = [NSMutableArray array];
     for (NSString *identity in identities) {
-        TCHParticipant *member = [self.channel memberWithIdentity:identity];
+        TCHParticipant *member = [self.channel participantWithIdentity:identity];
         if (member) {
             [ret addObject:member];
         } else {

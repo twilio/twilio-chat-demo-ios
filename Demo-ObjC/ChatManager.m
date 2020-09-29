@@ -131,7 +131,7 @@
 
 - (void)updateChatClient {
     if (self.client &&
-        (self.client.synchronizationStatus == TCHClientSynchronizationStatusChannelsListCompleted ||
+        (self.client.synchronizationStatus == TCHClientSynchronizationStatusConversationsListCompleted ||
          self.client.synchronizationStatus == TCHClientSynchronizationStatusCompleted)) {
         if (self.lastToken) {
             [self.client registerWithNotificationToken:self.lastToken completion:^(TCHResult *result) {
