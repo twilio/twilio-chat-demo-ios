@@ -210,12 +210,12 @@
 
 + (void)unconsumedMessagesForChannel:(nonnull TCHConversation *)channel
                           completion:(nonnull TCHNullableCountCompletion)completion {
-    if (channel.synchronizationStatus < TCHConversationSynchronizationStatusAll || !channel.messages) {
+    if (channel.synchronizationStatus < TCHConversationSynchronizationStatusAll || !channel) {
         completion([[TCHResult alloc] init], 0);
         return;
     }
     
-    if (channel.messages.lastConsumedMessageIndex) { // if the user has consumed any messages, the count is good as-is
+    if (channel.lastReadMessageIndex) { // if the user has consumed any messages, the count is good as-is
         [channel getUnconsumedMessagesCountWithCompletion:completion];
     } else { // otherwise display total message count for the channel
         [channel getMessagesCountWithCompletion:^(TCHResult *result, NSUInteger count) {

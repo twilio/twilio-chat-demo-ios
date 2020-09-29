@@ -82,7 +82,7 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
 }
 
 - (void)populateConsumptionHorizonData {
-    NSNumber *lastConsumedMessageIndex = [self.channel.messages lastConsumedMessageIndex];
+    NSNumber *lastConsumedMessageIndex = [self.channel lastReadMessageIndex];
     
     if (lastConsumedMessageIndex && ![[[self.messages lastObject] index] isEqualToNumber:lastConsumedMessageIndex]) {
         self.userConsumedIndex = lastConsumedMessageIndex;
@@ -482,7 +482,7 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
             cell = textMessageCell;
         }
         
-        [self.channel.messages advanceLastConsumedMessageIndex:message.index completion:nil];
+        [self.channel advanceLastReadMessageIndex:message.index completion:nil];
         [cell layoutIfNeeded];
     } else {
         cell = [[UITableViewCell alloc] initWithFrame:CGRectZero];
@@ -538,13 +538,13 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
         [messageOptions withBody:textField.text];
         textField.text = @"";
 
-        [self.channel.messages sendMessageWithOptions:messageOptions
-                                           completion:^(TCHResult *result, TCHMessage *message) {
-                                               if (!result.isSuccessful) {
-                                                   [DemoHelpers displayToastWithMessage:@"Failed to send message." inView:self.view];
-                                                   NSLog(@"%s: %@", __FUNCTION__, result.error);
-                                               }
-                                           }];
+        [self.channel sendMessageWithOptions:messageOptions
+                                  completion:^(TCHResult *result, TCHMessage *message) {
+            if (!result.isSuccessful) {
+                [DemoHelpers displayToastWithMessage:@"Failed to send message." inView:self.view];
+                NSLog(@"%s: %@", __FUNCTION__, result.error);
+            }
+        }];
     }
     return YES;
 }
@@ -584,12 +584,12 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
                           } onProgress:^(NSUInteger bytes) {
                           } onCompleted:^(NSString * _Nonnull mediaSid) {
                           }];
-    [self.channel.messages sendMessageWithOptions:messageOptions
-                                       completion:^(TCHResult *result, TCHMessage *message) {
-                                           if (!result.isSuccessful) {
-                                               [DemoHelpers displayToastWithMessage:@"Failed to send message." inView:self.view];
-                                           }
-                                       }];
+    [self.channel sendMessageWithOptions:messageOptions
+                              completion:^(TCHResult *result, TCHMessage *message) {
+        if (!result.isSuccessful) {
+            [DemoHelpers displayToastWithMessage:@"Failed to send message." inView:self.view];
+        }
+    }];
 }
 
 - (void)changeFriendlyName {
@@ -919,7 +919,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (void)destroyMessage:(TCHMessage *)message {
-    [self.channel.messages removeMessage:message completion:^(TCHResult *result) {
+    [self.channel removeMessage:message completion:^(TCHResult *result) {
         if (result.isSuccessful) {
             [self rebuildData];
         } else {
@@ -984,14 +984,14 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (void)loadInitialMessages {
-    [self.channel.messages getLastMessagesWithCount:kInitialMessageCountToLoad
-                                         completion:^(TCHResult *result, NSArray<TCHMessage *> *messages) {
-                                             if (result.isSuccessful) {
-                                                 [self addMessages:messages];
-                                                 [self populateConsumptionHorizonData];
-                                                 [self scrollToLastConsumedMessage];
-                                             }
-                                         }];
+    [self.channel getLastMessagesWithCount:kInitialMessageCountToLoad
+                                completion:^(TCHResult *result, NSArray<TCHMessage *> *messages) {
+        if (result.isSuccessful) {
+            [self addMessages:messages];
+            [self populateConsumptionHorizonData];
+            [self scrollToLastConsumedMessage];
+        }
+    }];
 }
 
 - (void)loadMoreMessages {
@@ -1013,30 +1013,30 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
             currentItem = [self.messages firstObject];
         }
         
-        [self.channel.messages getMessagesBefore:([firstMessage.index integerValue] - 1)
-                                       withCount:batchSize
-                                      completion:^(TCHResult *result, NSArray<TCHMessage *> *messages) {
-                                          if ([result isSuccessful] && messages != nil) {
-                                              if (messages.count < batchSize) {
-                                                  self.mightHaveMoreMessages = NO;
-                                              }
-                                              
-                                              NSIndexSet *indexes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, messages.count)];
-                                              [self.messages insertObjects:messages
-                                                                 atIndexes:indexes];
-                                              [self rebuildData];
-                                              NSUInteger targetIndex = [[self channelData] indexOfObject:currentItem];
-                                              if (targetIndex > 0) {
-                                                  targetIndex -= 1;
-                                              }
-                                              [self scrollToIndex:targetIndex position:UITableViewScrollPositionTop];
-                                          } else {
-                                              [DemoHelpers displayToastWithMessage:@"Failed to load more messages." inView:self.view];
-                                              NSLog(@"%s: %@", __FUNCTION__, result.error);
-                                          }
+        [self.channel getMessagesBefore:([firstMessage.index integerValue] - 1)
+                              withCount:batchSize
+                             completion:^(TCHResult *result, NSArray<TCHMessage *> *messages) {
+            if ([result isSuccessful] && messages != nil) {
+                if (messages.count < batchSize) {
+                    self.mightHaveMoreMessages = NO;
+                }
 
-                                          self.loadingMoreMessages = NO;
-                                      }];
+                NSIndexSet *indexes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, messages.count)];
+                [self.messages insertObjects:messages
+                                   atIndexes:indexes];
+                [self rebuildData];
+                NSUInteger targetIndex = [[self channelData] indexOfObject:currentItem];
+                if (targetIndex > 0) {
+                    targetIndex -= 1;
+                }
+                [self scrollToIndex:targetIndex position:UITableViewScrollPositionTop];
+            } else {
+                [DemoHelpers displayToastWithMessage:@"Failed to load more messages." inView:self.view];
+                NSLog(@"%s: %@", __FUNCTION__, result.error);
+            }
+
+            self.loadingMoreMessages = NO;
+        }];
     }
 }
 
@@ -1071,7 +1071,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
         return;
     }
     
-    NSNumber *lastConsumedMessage = [[[self channel] messages] lastConsumedMessageIndex];
+    NSNumber *lastConsumedMessage = [self.channel lastReadMessageIndex];
     NSUInteger targetIndex = self.channelData.count - 1;
     if (lastConsumedMessage) {
         if (self.userConsumedIndex) {

@@ -318,7 +318,7 @@
 
 
 - (void)setAllMessagesConsumed:(TCHConversation *)channel {
-    [channel.messages setAllMessagesConsumedWithCompletion:^(TCHResult * _Nonnull result, NSUInteger count) {
+    [channel setAllMessagesReadWithCompletion:^(TCHResult * _Nonnull result, NSUInteger count) {
         if (result.isSuccessful) {
             NSLog(@"@@@@@ %s new unconsumed count: %lu", __FUNCTION__, (unsigned long)count);
         } else {
@@ -328,7 +328,7 @@
 }
 
 - (void)setNoMessagesConsumed:(TCHConversation *)channel {
-    [channel.messages setNoMessagesConsumedWithCompletion:^(TCHResult * _Nonnull result, NSNumber *number) {
+    [channel setAllMessagesUnreadWithCompletion:^(TCHResult * _Nonnull result, NSNumber *number) {
         if (result.isSuccessful) {
             NSLog(@"@@@@@ %s new unconsumed count: %lu", __FUNCTION__, (unsigned long)number.integerValue);
         } else {
