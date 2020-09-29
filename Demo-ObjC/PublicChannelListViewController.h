@@ -11,6 +11,6 @@
 
 @interface PublicChannelListViewController : UIViewController
 
-@property (nonatomic, strong) TCHChannelDescriptorPaginator *paginator;
+@property (nonatomic, strong) TCHConversationDescriptorPaginator *paginator;
 
 @end

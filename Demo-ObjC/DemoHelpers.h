@@ -132,7 +132,7 @@
  @param channel The channel to request the count for.
  @param completion The completion block which will receive the response.
  */
-+ (void)unconsumedMessagesForChannel:(nonnull TCHChannel *)channel
++ (void)unconsumedMessagesForChannel:(nonnull TCHConversation *)channel
                           completion:(nonnull TCHNullableCountCompletion)completion;
 
 /** Load image from cache, if it exists locally.

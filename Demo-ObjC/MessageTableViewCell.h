@@ -12,7 +12,7 @@
 
 @interface MessageTableViewCell : UITableViewCell
 
-@property (nonatomic, strong) TCHChannel *channel;
+@property (nonatomic, strong) TCHConversation *channel;
 @property (nonatomic, strong) TCHMessage *message;
 @property (nonatomic, assign) id<MessageTableViewCellDelegate> delegate;
 

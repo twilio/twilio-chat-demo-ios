@@ -27,7 +27,7 @@ static NSString * const kMessageImageMimeType = @"image/jpeg";
 static const NSUInteger kInitialMessageCountToLoad = 20;
 static const NSUInteger kMoreMessageCountToLoad = 50;
 
-@interface ChannelViewController () <UITableViewDataSource, UITableViewDelegate, TCHChannelDelegate, UITextFieldDelegate, UIPopoverPresentationControllerDelegate, MessageTableViewCellDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate>
+@interface ChannelViewController () <UITableViewDataSource, UITableViewDelegate, TCHConversationDelegate, UITextFieldDelegate, UIPopoverPresentationControllerDelegate, MessageTableViewCellDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate>
 @property (nonatomic, weak) IBOutlet UITableView *tableView;
 @property (weak, nonatomic) IBOutlet UITextField *messageInput;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *keyboardAdjustmentConstraint;
@@ -166,7 +166,7 @@ static const NSUInteger kMoreMessageCountToLoad = 50;
     [super viewWillDisappear:animated];
 }
 
-- (void)setChannel:(TCHChannel *)channel {
+- (void)setChannel:(TCHConversation *)channel {
     _channel = channel;
     self.channel.delegate = self;
 
@@ -1177,26 +1177,26 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 #pragma mark - TMChannelDelegate
 
 - (void)chatClient:(TwilioConversationsClient *)client
-           channel:(TCHChannel *)channel
-           updated:(TCHChannelUpdate)updated {
+           channel:(TCHConversation *)channel
+           updated:(TCHConversationUpdate)updated {
     [self rebuildData];
 }
 
 - (void)chatClient:(TwilioConversationsClient *)client
-           channel:(TCHChannel *)channel
-synchronizationStatusUpdated:(TCHChannelSynchronizationStatus)status {
+           channel:(TCHConversation *)channel
+synchronizationStatusUpdated:(TCHConversationSynchronizationStatus)status {
     [self rebuildData];
 }
     
 - (void)chatClient:(TwilioConversationsClient *)client
-    channelDeleted:(TCHChannel *)channel {
+    channelDeleted:(TCHConversation *)channel {
     if (channel == self.channel) {
         [self performSegueWithIdentifier:@"returnToChannels" sender:nil];
     }
 }
     
 - (void)chatClient:(TwilioConversationsClient *)client
-           channel:(TCHChannel *)channel
+           channel:(TCHConversation *)channel
       memberJoined:(TCHMember *)member {
     [[[[ChatManager sharedManager] client] users] subscribedUserWithIdentity:member.identity
                                                                   completion:^(TCHResult *result, TCHUser *user) {
@@ -1208,14 +1208,14 @@ synchronizationStatusUpdated:(TCHChannelSynchronizationStatus)status {
 }
     
 - (void)chatClient:(TwilioConversationsClient *)client
-           channel:(TCHChannel *)channel
+           channel:(TCHConversation *)channel
             member:(TCHMember *)member
            updated:(TCHMemberUpdate)updated {
     [self refreshSeenBy];
 }
     
 - (void)chatClient:(TwilioConversationsClient *)client
-           channel:(TCHChannel *)channel
+           channel:(TCHConversation *)channel
             member:(TCHMember *)member
               user:(TCHUser *)user
            updated:(TCHUserUpdate)updated {
@@ -1236,7 +1236,7 @@ synchronizationStatusUpdated:(TCHChannelSynchronizationStatus)status {
 }
 
 - (void)chatClient:(TwilioConversationsClient *)client
-           channel:(TCHChannel *)channel
+           channel:(TCHConversation *)channel
         memberLeft:(TCHMember *)member {
     [[[[ChatManager sharedManager] client] users] subscribedUserWithIdentity:member.identity
                                                                   completion:^(TCHResult *result, TCHUser *user) {
@@ -1248,27 +1248,27 @@ synchronizationStatusUpdated:(TCHChannelSynchronizationStatus)status {
 }
     
 - (void)chatClient:(TwilioConversationsClient *)client
-           channel:(TCHChannel *)channel
+           channel:(TCHConversation *)channel
       messageAdded:(TCHMessage *)message {
     [self addMessages:@[message]];
 }
     
 - (void)chatClient:(TwilioConversationsClient *)client
-           channel:(TCHChannel *)channel
+           channel:(TCHConversation *)channel
     messageDeleted:(TCHMessage *)message {
     [self removeMessages:@[message]];
     [self refreshSeenBy];
 }
     
 - (void)chatClient:(TwilioConversationsClient *)client
-           channel:(TCHChannel *)channel
+           channel:(TCHConversation *)channel
            message:(TCHMessage *)message
            updated:(TCHMessageUpdate)updated {
     [self rebuildData];
 }
     
 - (void)chatClient:(TwilioConversationsClient *)client
-typingStartedOnChannel:(TCHChannel *)channel
+typingStartedOnChannel:(TCHConversation *)channel
             member:(TCHMember *)member {
     [self.typingUsers addObject:member];
     [self rebuildData];
@@ -1278,7 +1278,7 @@ typingStartedOnChannel:(TCHChannel *)channel
 }
     
 - (void)chatClient:(TwilioConversationsClient *)client
-typingEndedOnChannel:(TCHChannel *)channel
+typingEndedOnChannel:(TCHConversation *)channel
             member:(TCHMember *)member {
     [self.typingUsers removeObject:member];
     [self rebuildData];

@@ -11,7 +11,7 @@
 
 @interface PublicChannelListViewController () <UITableViewDelegate, UITableViewDataSource>
 @property (nonatomic, weak) IBOutlet UITableView *tableView;
-@property (nonatomic, strong) NSMutableArray<TCHChannelDescriptor *> *publicChannelDescriptors;
+@property (nonatomic, strong) NSMutableArray<TCHConversationDescriptor *> *publicChannelDescriptors;
 @property (nonatomic, assign, getter=isLoadingMore) BOOL loadingMore;
 @end
 
@@ -44,7 +44,7 @@
     [super didReceiveMemoryWarning];
 }
 
-- (void)setPaginator:(TCHChannelDescriptorPaginator *)paginator {
+- (void)setPaginator:(TCHConversationDescriptorPaginator *)paginator {
     if (!self.paginator) { // Seed channel descriptors on first load
         [self.publicChannelDescriptors addObjectsFromArray:paginator.items];
         [self.tableView reloadData];
@@ -71,7 +71,7 @@
         [cell setBackgroundColor:UIColor.whiteColor];
     }
     
-    TCHChannelDescriptor *descriptor = self.publicChannelDescriptors[indexPath.row];
+    TCHConversationDescriptor *descriptor = self.publicChannelDescriptors[indexPath.row];
     
     NSString *nameLabel = descriptor.friendlyName;
     if (descriptor.friendlyName.length == 0) {
@@ -101,8 +101,8 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [self dismissViewControllerAnimated:NO
                              completion:^{
-                                 TCHChannelDescriptor *descriptor = self.publicChannelDescriptors[indexPath.row];
-                                 [descriptor channelWithCompletion:^(TCHResult *result, TCHChannel *channel) {
+                                 TCHConversationDescriptor *descriptor = self.publicChannelDescriptors[indexPath.row];
+                                 [descriptor channelWithCompletion:^(TCHResult *result, TCHConversation *channel) {
                                      [channel joinWithCompletion:^(TCHResult *result) {
                                          if (result.isSuccessful) {
                                              [DemoHelpers displayToastWithMessage:@"Channel joined."
@@ -124,7 +124,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
         if (self.paginator && [self.paginator hasNextPage] && !self.isLoadingMore) {
             self.loadingMore = YES;
             
-            [self.paginator requestNextPageWithCompletion:^(TCHResult *result, TCHChannelDescriptorPaginator *paginator) {
+            [self.paginator requestNextPageWithCompletion:^(TCHResult *result, TCHConversationDescriptorPaginator *paginator) {
                 if ([result isSuccessful]) {
                     self.paginator = paginator;
                     

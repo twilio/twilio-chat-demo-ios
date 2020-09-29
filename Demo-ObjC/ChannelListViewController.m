@@ -125,15 +125,15 @@
                                      if (newChannelNameTextField &&
                                          newChannelNameTextField.text &&
                                          ![newChannelNameTextField.text isEqualToString:@""]) {
-                                         options[TCHChannelOptionFriendlyName] = newChannelNameTextField.text;
+                                         options[TCHConversationOptionFriendlyName] = newChannelNameTextField.text;
                                      }
                                      if (isPrivate) {
-                                         options[TCHChannelOptionType] = @(TCHChannelTypePrivate);
+                                         options[TCHConversationOptionType] = @(TCHConversationTypePrivate);
                                      }
                                      
-                                     TCHChannels *channelsList = [[[ChatManager sharedManager] client] channelsList];
+                                     TCHConversations *channelsList = [[[ChatManager sharedManager] client] channelsList];
                                      [channelsList createChannelWithOptions:options
-                                                                      completion:^(TCHResult *result, TCHChannel *channel) {
+                                                                      completion:^(TCHResult *result, TCHConversation *channel) {
                                                                           if (result.isSuccessful) {
                                                                               [DemoHelpers displayToastWithMessage:@"Channel Created"
                                                                                                             inView:self.view];
@@ -171,9 +171,9 @@
                                   ^(UIAlertAction *action) {
                                       UITextField *channelUniqueNameTextField = joinChannelDialog.textFields[0];
                                       
-                                      TCHChannels *channelsList = [[[ChatManager sharedManager] client] channelsList];
+                                      TCHConversations *channelsList = [[[ChatManager sharedManager] client] channelsList];
                                       [channelsList channelWithSidOrUniqueName:channelUniqueNameTextField.text
-                                                                    completion:^(TCHResult *result, TCHChannel *channel) {
+                                                                    completion:^(TCHResult *result, TCHConversation *channel) {
                                                                         if (result.isSuccessful) {
                                                                             [self joinChannel:channel];
                                                                         } else {
@@ -194,10 +194,10 @@
 }
 
 - (void)browsePublicChannels {
-    TCHChannels *channelsList = [[[ChatManager sharedManager] client] channelsList];
+    TCHConversations *channelsList = [[[ChatManager sharedManager] client] channelsList];
 
-    void __block (^_completion)(TCHResult *result, TCHChannelDescriptorPaginator *paginator);
-    TCHChannelDescriptorPaginatorCompletion completion = ^(TCHResult *result, TCHChannelDescriptorPaginator *paginator) {
+    void __block (^_completion)(TCHResult *result, TCHConversationDescriptorPaginator *paginator);
+    TCHConversationDescriptorPaginatorCompletion completion = ^(TCHResult *result, TCHConversationDescriptorPaginator *paginator) {
         if (result.isSuccessful) {
             [self.view endEditing:YES];
             
@@ -236,7 +236,7 @@
     [channelsList publicChannelDescriptorsWithCompletion:completion];
 }
 
-- (void)displayOperationsForChannel:(TCHChannel *)channel
+- (void)displayOperationsForChannel:(TCHConversation *)channel
                         calledFromSwipe:(BOOL)calledFromSwipe {
     __weak __typeof(self) weakSelf = self;
     
@@ -245,7 +245,7 @@
                                                                      preferredStyle:UIAlertControllerStyleActionSheet];
     [self configurePopoverPresentationController:channelActions.popoverPresentationController];
 
-    if (channel.status == TCHChannelStatusJoined) {
+    if (channel.status == TCHConversationStatusJoined) {
         [channelActions addAction:[UIAlertAction actionWithTitle:@"Set All Messages Consumed"
                                                            style:UIAlertActionStyleDefault
                                                          handler:^(UIAlertAction *action) {
@@ -263,7 +263,7 @@
                                                          }]];
     }
     
-    if (channel.status == TCHChannelStatusInvited) {
+    if (channel.status == TCHConversationStatusInvited) {
         [channelActions addAction:[UIAlertAction actionWithTitle:@"Decline Invite"
                                                            style:UIAlertActionStyleDefault
                                                          handler:^(UIAlertAction *action) {
@@ -271,7 +271,7 @@
                                                          }]];
     }
     
-    if (channel.status == TCHChannelStatusInvited || channel.status == TCHChannelStatusNotParticipating) {
+    if (channel.status == TCHConversationStatusInvited || channel.status == TCHConversationStatusNotParticipating) {
         [channelActions addAction:[UIAlertAction actionWithTitle:@"Join"
                                                            style:UIAlertActionStyleDefault
                                                          handler:^(UIAlertAction *action) {
@@ -308,8 +308,8 @@
     self.channels = nil;
     [self.tableView reloadData];
 
-    TCHChannels *channelsList = [[[ChatManager sharedManager] client] channelsList];
-    NSMutableOrderedSet<TCHChannel *> *newChannels = [[NSMutableOrderedSet alloc] init];
+    TCHConversations *channelsList = [[[ChatManager sharedManager] client] channelsList];
+    NSMutableOrderedSet<TCHConversation *> *newChannels = [[NSMutableOrderedSet alloc] init];
     [newChannels addObjectsFromArray:[channelsList subscribedChannels]];
     [self sortChannels:newChannels];
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -320,7 +320,7 @@
 
 
 
-- (void)setAllMessagesConsumed:(TCHChannel *)channel {
+- (void)setAllMessagesConsumed:(TCHConversation *)channel {
     [channel.messages setAllMessagesConsumedWithCompletion:^(TCHResult * _Nonnull result, NSUInteger count) {
         if (result.isSuccessful) {
             NSLog(@"@@@@@ %s new unconsumed count: %lu", __FUNCTION__, (unsigned long)count);
@@ -330,7 +330,7 @@
     }];
 }
 
-- (void)setNoMessagesConsumed:(TCHChannel *)channel {
+- (void)setNoMessagesConsumed:(TCHConversation *)channel {
     [channel.messages setNoMessagesConsumedWithCompletion:^(TCHResult * _Nonnull result, NSNumber *number) {
         if (result.isSuccessful) {
             NSLog(@"@@@@@ %s new unconsumed count: %lu", __FUNCTION__, (unsigned long)number.integerValue);
@@ -340,7 +340,7 @@
     }];
 }
 
-- (void)leaveChannel:(TCHChannel *)channel {
+- (void)leaveChannel:(TCHConversation *)channel {
     [channel leaveWithCompletion:^(TCHResult *result) {
         if (result.isSuccessful) {
             [self.channels removeObject:channel];
@@ -355,7 +355,7 @@
     }];
 }
 
-- (void)destroyChannel:(TCHChannel *)channel {
+- (void)destroyChannel:(TCHConversation *)channel {
     [channel destroyWithCompletion:^(TCHResult *result) {
         if (result.isSuccessful) {
             [DemoHelpers displayToastWithMessage:@"Channel destroyed."
@@ -369,7 +369,7 @@
     }];
 }
 
-- (void)joinChannel:(TCHChannel *)channel {
+- (void)joinChannel:(TCHConversation *)channel {
     [channel joinWithCompletion:^(TCHResult *result) {
         if (result.isSuccessful) {
             [DemoHelpers displayToastWithMessage:@"Channel joined."
@@ -383,7 +383,7 @@
     }];
 }
 
-- (void)declineInviteOnChannel:(TCHChannel *)channel {
+- (void)declineInviteOnChannel:(TCHConversation *)channel {
     [channel declineInvitationWithCompletion:^(TCHResult *result) {
         if (result.isSuccessful) {
             [DemoHelpers displayToastWithMessage:@"Invite declined."
@@ -415,13 +415,13 @@
     } else {
         ChannelTableViewCell *channelCell = [tableView dequeueReusableCellWithIdentifier:@"channel"];
         
-        TCHChannel *channel = self.channels[indexPath.row];
+        TCHConversation *channel = self.channels[indexPath.row];
 
         NSString *nameLabel = channel.friendlyName;
         if (channel.friendlyName.length == 0) {
             nameLabel = @"(no friendly name)";
         }
-        if (channel.type == TCHChannelTypePrivate) {
+        if (channel.type == TCHConversationTypePrivate) {
             nameLabel = [nameLabel stringByAppendingString:@" (private)"];
         }
         
@@ -430,16 +430,16 @@
 
         UIColor *channelColor = nil;
         switch (channel.status) {
-            case TCHChannelStatusInvited:
+            case TCHConversationStatusInvited:
                 channelColor = UIColor.systemBlueColor;
                 break;
-            case TCHChannelStatusJoined:
+            case TCHConversationStatusJoined:
                 channelColor = UIColor.systemGreenColor;
                 break;
-            case TCHChannelStatusNotParticipating:
+            case TCHConversationStatusNotParticipating:
                 channelColor = UIColor.systemGrayColor;
                 break;
-            case TCHChannelStatusUnknown:
+            case TCHConversationStatusUnknown:
                 // Will not happen for synchronized channels
                 channelColor = UIColor.systemGrayColor;
                 break;
@@ -457,7 +457,7 @@
 
 #pragma mark - UITableViewDelegate methods
 
-- (TCHChannel *)channelForIndexPath:(NSIndexPath *)indexPath {
+- (TCHConversation *)channelForIndexPath:(NSIndexPath *)indexPath {
     if (!self.channels || indexPath.row >= self.channels.count) {
         return nil;
     }
@@ -473,9 +473,9 @@
         return;
     }
     
-    TCHChannel *channel = [self channelForIndexPath:indexPath];
+    TCHConversation *channel = [self channelForIndexPath:indexPath];
     
-    if (channel.status == TCHChannelStatusJoined) {
+    if (channel.status == TCHConversationStatusJoined) {
         // synchronize will be a noop and call the completion immediately if the channel is ready
         [self performSegueWithIdentifier:@"viewChannel" sender:channel];
     } else {
@@ -486,7 +486,7 @@
 
 - (NSArray *)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(NSIndexPath *)indexPath {
     NSMutableArray *actions = [NSMutableArray array];
-    TCHChannel *channel = [self channelForIndexPath:indexPath];
+    TCHConversation *channel = [self channelForIndexPath:indexPath];
 
     __weak __typeof(self) weakSelf = self;
     [actions addObject:[UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive
@@ -511,7 +511,7 @@
 commitEditingStyle:(UITableViewCellEditingStyle)editingStyle
 forRowAtIndexPath:(NSIndexPath *)indexPath {
     if (editingStyle == UITableViewCellEditingStyleDelete) {
-        TCHChannel *channel = [self channelForIndexPath:indexPath];
+        TCHConversation *channel = [self channelForIndexPath:indexPath];
         [self destroyChannel:channel];
     }
 }
@@ -543,7 +543,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
                      messagePlaceholder:(NSString *)messagePlaceholder {
     [[[[ChatManager sharedManager] client] channelsList] channelWithSidOrUniqueName:channelSid
                                                                          completion:
-     ^(TCHResult *result, TCHChannel *channel) {
+     ^(TCHResult *result, TCHConversation *channel) {
          if (result.isSuccessful) {
              [DemoHelpers displayToastWithMessage:[NSString stringWithFormat:messagePlaceholder, channel.friendlyName] inView:self.view];
          } else {
@@ -561,17 +561,17 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     }
 }
 
-- (void)chatClient:(TwilioConversationsClient *)client channelAdded:(TCHChannel *)channel {
+- (void)chatClient:(TwilioConversationsClient *)client channelAdded:(TCHConversation *)channel {
     [self.channels addObject:channel];
     [self sortChannels:self.channels];
     [self.tableView reloadData];
 }
 
-- (void)chatClient:(TwilioConversationsClient *)client channel:(TCHChannel *)channel updated:(TCHChannelUpdate)updated {
+- (void)chatClient:(TwilioConversationsClient *)client channel:(TCHConversation *)channel updated:(TCHConversationUpdate)updated {
     [self.tableView reloadData];
 }
 
-- (void)chatClient:(TwilioConversationsClient *)client channelDeleted:(TCHChannel *)channel {
+- (void)chatClient:(TwilioConversationsClient *)client channelDeleted:(TCHConversation *)channel {
     [self.channels removeObject:channel];
     [self.tableView reloadData];
 }

@@ -9,5 +9,5 @@
 #import <TwilioConversationsClient/TwilioConversationsClient.h>
 
 @interface ChannelViewController : UIViewController
-@property (nonatomic, strong) TCHChannel *channel;
+@property (nonatomic, strong) TCHConversation *channel;
 @end

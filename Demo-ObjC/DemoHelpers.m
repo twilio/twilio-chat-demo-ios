@@ -208,9 +208,9 @@
     }
 }
 
-+ (void)unconsumedMessagesForChannel:(nonnull TCHChannel *)channel
++ (void)unconsumedMessagesForChannel:(nonnull TCHConversation *)channel
                           completion:(nonnull TCHNullableCountCompletion)completion {
-    if (channel.synchronizationStatus < TCHChannelSynchronizationStatusAll || !channel.messages) {
+    if (channel.synchronizationStatus < TCHConversationSynchronizationStatusAll || !channel.messages) {
         completion([[TCHResult alloc] init], 0);
         return;
     }
