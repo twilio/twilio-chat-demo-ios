@@ -175,19 +175,20 @@
 #pragma mark - TwilioConversationsClientDelegate temporary impl until channels list takes over
 
 // Can occur before we transfer the delegate to the channels list VC
-- (void)chatClient:(TwilioConversationsClient *)client notificationUpdatedBadgeCount:(NSUInteger)badgeCount {
+- (void)conversationsClient:(TwilioConversationsClient *)client
+notificationUpdatedBadgeCount:(NSUInteger)badgeCount {
     [[UIApplication sharedApplication] setApplicationIconBadgeNumber:badgeCount];
 }
 
-- (void)chatClient:(TwilioConversationsClient *)client errorReceived:(TCHError *)error {
+- (void)conversationsClient:(TwilioConversationsClient *)client errorReceived:(TCHError *)error {
     NSLog(@"error received: %@", error);
 }
     
-- (void)chatClientTokenWillExpire:(TwilioConversationsClient *)client {
+- (void)conversationsClientTokenWillExpire:(TwilioConversationsClient *)client {
     [self renewTokenForClient:client];
 }
 
-- (void)chatClientTokenExpired:(TwilioConversationsClient *)client {
+- (void)conversationsClientTokenExpired:(TwilioConversationsClient *)client {
     [self renewTokenForClient:client];
 }
 

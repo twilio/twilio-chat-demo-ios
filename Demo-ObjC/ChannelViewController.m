@@ -1141,28 +1141,28 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 
 #pragma mark - TMChannelDelegate
 
-- (void)chatClient:(TwilioConversationsClient *)client
-           channel:(TCHConversation *)channel
-           updated:(TCHConversationUpdate)updated {
+- (void)conversationsClient:(TwilioConversationsClient *)client
+                    channel:(TCHConversation *)channel
+                    updated:(TCHConversationUpdate)updated {
     [self rebuildData];
 }
 
-- (void)chatClient:(TwilioConversationsClient *)client
-           channel:(TCHConversation *)channel
+- (void)conversationsClient:(TwilioConversationsClient *)client
+                    channel:(TCHConversation *)channel
 synchronizationStatusUpdated:(TCHConversationSynchronizationStatus)status {
     [self rebuildData];
 }
     
-- (void)chatClient:(TwilioConversationsClient *)client
-    channelDeleted:(TCHConversation *)channel {
+- (void)conversationsClient:(TwilioConversationsClient *)client
+             channelDeleted:(TCHConversation *)channel {
     if (channel == self.channel) {
         [self performSegueWithIdentifier:@"returnToChannels" sender:nil];
     }
 }
     
-- (void)chatClient:(TwilioConversationsClient *)client
-           channel:(TCHConversation *)channel
-      memberJoined:(TCHParticipant *)member {
+- (void)conversationsClient:(TwilioConversationsClient *)client
+                    channel:(TCHConversation *)channel
+               memberJoined:(TCHParticipant *)member {
     [ChatManager.sharedManager.client subscribedUserWithIdentity:member.identity
                                                       completion:^(TCHResult *result, TCHUser *user) {
                                                                       if (result.isSuccessful) {
@@ -1172,18 +1172,18 @@ synchronizationStatusUpdated:(TCHConversationSynchronizationStatus)status {
                                                                   }];
 }
     
-- (void)chatClient:(TwilioConversationsClient *)client
-           channel:(TCHConversation *)channel
-            member:(TCHParticipant *)member
-           updated:(TCHParticipantUpdate)updated {
+- (void)conversationsClient:(TwilioConversationsClient *)client
+                    channel:(TCHConversation *)channel
+                     member:(TCHParticipant *)member
+                    updated:(TCHParticipantUpdate)updated {
     [self refreshSeenBy];
 }
     
-- (void)chatClient:(TwilioConversationsClient *)client
-           channel:(TCHConversation *)channel
-            member:(TCHParticipant *)member
-              user:(TCHUser *)user
-           updated:(TCHUserUpdate)updated {
+- (void)conversationsClient:(TwilioConversationsClient *)client
+                    channel:(TCHConversation *)channel
+                     member:(TCHParticipant *)member
+                       user:(TCHUser *)user
+                    updated:(TCHUserUpdate)updated {
     if (updated == TCHUserUpdateFriendlyName) {
         [self rebuildData];
     } else if (updated == TCHUserUpdateAttributes ||
@@ -1200,9 +1200,9 @@ synchronizationStatusUpdated:(TCHConversationSynchronizationStatus)status {
     }
 }
 
-- (void)chatClient:(TwilioConversationsClient *)client
-           channel:(TCHConversation *)channel
-        memberLeft:(TCHParticipant *)member {
+- (void)conversationsClient:(TwilioConversationsClient *)client
+                    channel:(TCHConversation *)channel
+                 memberLeft:(TCHParticipant *)member {
     [ChatManager.sharedManager.client subscribedUserWithIdentity:member.identity
                                                       completion:^(TCHResult *result, TCHUser *user) {
                                                                       if (result.isSuccessful) {
@@ -1212,29 +1212,29 @@ synchronizationStatusUpdated:(TCHConversationSynchronizationStatus)status {
                                                                   }];
 }
     
-- (void)chatClient:(TwilioConversationsClient *)client
-           channel:(TCHConversation *)channel
-      messageAdded:(TCHMessage *)message {
+- (void)conversationsClient:(TwilioConversationsClient *)client
+               conversation:(TCHConversation *)channel
+               messageAdded:(TCHMessage *)message {
     [self addMessages:@[message]];
 }
     
-- (void)chatClient:(TwilioConversationsClient *)client
-           channel:(TCHConversation *)channel
-    messageDeleted:(TCHMessage *)message {
+- (void)conversationsClient:(TwilioConversationsClient *)client
+               conversation:(TCHConversation *)channel
+             messageDeleted:(TCHMessage *)message {
     [self removeMessages:@[message]];
     [self refreshSeenBy];
 }
     
-- (void)chatClient:(TwilioConversationsClient *)client
-           channel:(TCHConversation *)channel
-           message:(TCHMessage *)message
-           updated:(TCHMessageUpdate)updated {
+- (void)conversationsClient:(TwilioConversationsClient *)client
+               conversation:(TCHConversation *)channel
+                    message:(TCHMessage *)message
+                    updated:(TCHMessageUpdate)updated {
     [self rebuildData];
 }
     
-- (void)chatClient:(TwilioConversationsClient *)client
-typingStartedOnChannel:(TCHConversation *)channel
-            member:(TCHParticipant *)member {
+- (void)conversationsClient:(TwilioConversationsClient *)client
+typingStartedOnConversation:(TCHConversation *)channel
+                     member:(TCHParticipant *)member {
     [self.typingUsers addObject:member];
     [self rebuildData];
     if ([self isNearBottom]) {
@@ -1242,9 +1242,9 @@ typingStartedOnChannel:(TCHConversation *)channel
     }
 }
     
-- (void)chatClient:(TwilioConversationsClient *)client
-typingEndedOnChannel:(TCHConversation *)channel
-            member:(TCHParticipant *)member {
+- (void)conversationsClient:(TwilioConversationsClient *)client
+  typingEndedOnConversation:(TCHConversation *)channel
+                     member:(TCHParticipant *)member {
     [self.typingUsers removeObject:member];
     [self rebuildData];
     if ([self isNearBottom]) {
