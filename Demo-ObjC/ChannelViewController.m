@@ -1115,7 +1115,7 @@ estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (void)sortMessages {
-    [self.messages sortUsingDescriptors:@[[[NSSortDescriptor alloc] initWithKey:@"timestamp"
+    [self.messages sortUsingDescriptors:@[[[NSSortDescriptor alloc] initWithKey:@"dateCreated"
                                                                       ascending:YES]]];
 }
 

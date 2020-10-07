@@ -74,7 +74,7 @@
     components[@"reactions"] = reactionsView;
     [self addSubview:reactionsView];
     self.reactionsView = reactionsView;
-    
+
     NSMutableArray<NSLayoutConstraint *> *constraints = [NSMutableArray array];
     [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-[avatar(44)]-[author]|"
                                                                              options:0
@@ -154,9 +154,9 @@
     }
     if ([self.localIdentity isEqualToString:[self message].author]) {
         if (@available(iOS 13.0, *)) {
-            self.contentView.backgroundColor = UIColor.systemBackgroundColor;
+            self.backgroundColor = UIColor.systemBackgroundColor;
         } else {
-            self.contentView.backgroundColor = [UIColor colorWithWhite:0.96f alpha:1.0f];
+            self.backgroundColor = [UIColor colorWithWhite:0.96f alpha:1.0f];
         }
     }
 }
@@ -169,9 +169,9 @@
 
 - (void)clearCell {
     if (@available(iOS 13.0, *)) {
-        self.contentView.backgroundColor = [UIColor systemBackgroundColor];
+        self.backgroundColor = [UIColor systemBackgroundColor];
     } else {
-        self.contentView.backgroundColor = UIColor.whiteColor;
+        self.backgroundColor = UIColor.whiteColor;
     }
     self.reactionsView.reactions = @[];
     self.reactionsView.localIdentity = @"";
