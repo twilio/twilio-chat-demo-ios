@@ -1,3 +1,7 @@
+# This repository is deprecated
+
+The new version of the Conversations Demo Application is available in [twilio-conversations-demo-swift](https://github.com/twilio/twilio-conversations-demo-swift). It is an example of better app architecture and demonstrates best practices in implementing Twilio-based Conversations. Please use it instead of this one.
+
 # Chat Demo Application Overview
 
 ## Getting Started
